@@ -30,23 +30,42 @@ td input{width:54px;padding:3px}
 .x{margin-left:auto;border:0;background:none;color:var(--mu)}
 .tag{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}
 </style></head><body><div class="w">
-<header><h1>🎶 讚頌團 練習儀表板</h1><div class="row"><select id="evsel" data-a="ev"></select></div></header>
+<header><h1>🎶 讚頌團 練習儀表板</h1><div class="row"><select id="evsel" data-a="ev"></select><span class="mu">公開瀏覽 · 可編輯出缺席與分數</span></div></header>
 <nav id="nav"></nav><div id="msg" class="mu"></div><div id="app">載入中…</div></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 const S={events:[],members:[],songs:[],sessions:[],att:{},scores:{},logs:[]};
+const FIREBASE_CONFIG={
+ apiKey:'YOUR_API_KEY',
+ authDomain:'YOUR_PROJECT_ID.firebaseapp.com',
+ projectId:'YOUR_PROJECT_ID',
+ appId:'YOUR_APP_ID'
+};
 let db=null,ev=null,tab='home',edit=false,pend=false,showOut=false;
 try{ev=localStorage.getItem('ev')}catch(e){}
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s);
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Date().toLocaleDateString('sv');
 const TABS=[['home','總覽'],['songs','曲目與人選'],['att','出缺席'],['log','練習紀錄'],['set','設定']];
 const ST={todo:'未練',wip:'練習中',ok:'已 OK'};
-function sub(name,fn){db.collection(name).onSnapshot(q=>{fn(q.docs.map(d=>({id:d.id,...d.data()})));render()},e=>{$('#msg').textContent='資料讀取失敗：'+(e.message||e.code)})}
-const mapSub=(n,k)=>sub(n,d=>{S[k]={};d.forEach(x=>{const{id,...r}=x;S[k][id]=r})});
+function sub(name,fn){return db.collection(name).onSnapshot(q=>{fn(q.docs.map(d=>({id:d.id,...d.data()})));render()},e=>{$('#msg').textContent='資料讀取失敗：'+(e.message||e.code)})}
+function recordSub(name,key,parentField,childField){
+ return db.collection(name).onSnapshot(q=>{
+  const records={};
+  q.docs.forEach(doc=>{
+   const data=doc.data(),parent=data[parentField],child=data[childField];
+   if(typeof parent!=='string'||typeof child!=='string')return;
+   records[parent]??={};
+   records[parent][child]=data.value;
+  });
+  S[key]=records;render();
+ },e=>{$('#msg').textContent='資料讀取失敗：'+(e.message||e.code)});
+}
 function E(){return S.events.find(e=>e.id===ev)||S.events.find(e=>e.date>=today())||S.events[S.events.length-1]}
 const byo=(a,b)=>(a.order||0)-(b.order||0);
 function render(){
- if(document.activeElement?.matches('input[type=text],input[type=date],textarea')){pend=true;return}
+ if(document.activeElement?.matches('input[type=text],input[type=date],input[type=number],textarea')){pend=true;return}
  pend=false;
  $('#nav').innerHTML=TABS.map(([k,v])=>`<button class="${tab===k?'on':''}" data-t="${k}">${v}</button>`).join('');
  const e=E();
@@ -71,66 +90,66 @@ function home(e){
 function heat(n){return n==null?'':`background:hsl(${(n-1)*13} 60% 50% / .3)`}
 function songs(e){
  const{songs}=ctx(e),M=AM(e);
- return `<div class="row"><span class="mu">點分數格指定領唱，可複選，再點一次取消（外框＝已指定）。分數為團員自評。</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">顯示未參加者</button><button data-a="edit" class="${edit?'on':''}">${edit?'完成編輯分數':'編輯分數'}</button></div>
+ return `<div class="row"><span class="mu">點「編輯分數」可修改分數；任何訪客都能修改所有人的分數。</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">顯示未參加者</button><button data-a="edit" class="${edit?'on':''}">${edit?'完成編輯分數':'編輯分數'}</button></div>
  <div class="sc"><table><tr><th>曲目</th><th>Key</th><th>領唱</th>${M.map(m=>`<th>${esc(m.name)}${(e.out||[]).includes(m.id)?'<br><span class="q">不參加</span>':''}</th>`).join('')}<th>狀態</th></tr>
- ${songs.map(s=>`<tr><td>${ttl(s)}</td><td>${esc(s.key||'')}</td><td>${esc(LD(s).filter(id=>M.some(m=>m.id===id)).map(mn).join('、'))||'<span class="q">–</span>'}</td>${M.map(m=>{const v=(S.scores[m.id]||{})[s.id];return edit?`<td><input type="number" min="1" max="10" value="${v??''}" data-a="score" data-s="${s.id}" data-m="${m.id}"></td>`:`<td class="h ${LD(s).includes(m.id)?'sel':''}" style="${heat(v)}" data-a="lead" data-s="${s.id}" data-m="${m.id}">${v??'–'}</td>`}).join('')}
- <td><select data-a="status" data-s="${s.id}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${s.status===k?'selected':''}>${v}</option>`).join('')}</select></td></tr>`).join('')}</table></div>`}
+ ${songs.map(s=>`<tr><td>${ttl(s)}</td><td>${esc(s.key||'')}</td><td>${esc(LD(s).filter(id=>M.some(m=>m.id===id)).map(mn).join('、'))||'<span class="q">–</span>'}</td>${M.map(m=>{const raw=(S.scores[m.id]||{})[s.id],v=Number.isInteger(raw)&&raw>=1&&raw<=10?raw:null;return edit?`<td><input type="number" min="1" max="10" step="1" value="${v??''}" data-a="score" data-s="${s.id}" data-m="${m.id}"></td>`:`<td class="${LD(s).includes(m.id)?'sel':''}" style="${heat(v)}">${v??'–'}</td>`}).join('')}
+ <td>${esc(ST[s.status]||'未練')}</td></tr>`).join('')}</table></div>`}
 function att(e){
  const{sess}=ctx(e),M=AM(e),t=today(),sym={y:'<span class="y">✓</span>',n:'<span class="n">請假</span>','?':'<span class="q">?</span>'};
- return `<div class="row"><span class="mu">點格子切換：✓ 出席 → 請假 → ? 未確認</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">顯示未參加者</button></div><div class="sc"><table><tr><th>成員</th>${sess.map(s=>`<th class="${s.date<t?'dim':''}">${esc(s.date.slice(5))}<br>${esc(s.label||'')}</th>`).join('')}</tr>
+ return `<div class="row"><span class="mu">點格子切換：✓ 出席 → 請假 → ? 未確認。任何訪客都能修改所有人的出席狀態。</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">顯示未參加者</button></div><div class="sc"><table><tr><th>成員</th>${sess.map(s=>`<th class="${s.date<t?'dim':''}">${esc(s.date.slice(5))}<br>${esc(s.label||'')}</th>`).join('')}</tr>
  ${M.map(m=>`<tr><td>${esc(m.name)}${(e.out||[]).includes(m.id)?' <span class="q">（不參加）</span>':''}</td>${sess.map(s=>`<td class="h ${s.date<t?'dim':''}" data-a="att" data-s="${s.id}" data-m="${m.id}">${sym[(S.att[s.id]||{})[m.id]||'?']}</td>`).join('')}</tr>`).join('')}
  <tr><td><b>出席人數</b></td>${sess.map(s=>`<td><b>${M.filter(m=>(S.att[s.id]||{})[m.id]==='y').length}/${M.length}</b></td>`).join('')}</tr></table></div>`}
 function log(e){
- const{songs,sess}=ctx(e),L=S.logs.filter(l=>l.eventId===e.id).sort((a,b)=>b.ts-a.ts);
- return `<div class="c"><div class="row"><select id="l_s">${sess.map(s=>`<option value="${s.id}" ${s.date<=today()?'selected':''}>${esc(s.date.slice(5))} ${esc(s.label||'')}</option>`).join('')}</select>
- <select id="l_g"><option value="">整體</option>${songs.map(s=>`<option value="${s.id}">${esc(s.title)}</option>`).join('')}</select></div>
- <div class="row"><input type="text" id="l_i" placeholder="發現的問題（如：副歌換氣不齊）"></div><div class="row"><input type="text" id="l_f" placeholder="改善方式 / 下次要練的"><button class="p" data-a="addlog">新增</button></div></div>
- <h2>紀錄</h2><div class="c" style="padding:0">${L.map(l=>`<div class="it"><input type="checkbox" ${l.done?'checked':''} data-a="done" data-id="${l.id}"><div style="${l.done?'opacity:.5':''}"><b>${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}</b> <span class="tag">${esc(S.sessions.find(s=>s.id===l.sessionId)?.date.slice(5)||'')}</span><br>${esc(l.issue)}<br><span class="mu">→ ${esc(l.fix||'')}</span></div><button class="x" data-a="del" data-p="logs/${l.id}">✕</button></div>`).join('')||'<div class="it mu">還沒有練習紀錄</div>'}</div>`}
+ const L=S.logs.filter(l=>l.eventId===e.id).sort((a,b)=>b.ts-a.ts);
+ return `<h2>練習紀錄（唯讀）</h2><div class="c" style="padding:0">${L.map(l=>`<div class="it"><div style="${l.done?'opacity:.5':''}"><b>${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}</b> <span class="tag">${esc(S.sessions.find(s=>s.id===l.sessionId)?.date.slice(5)||'')}</span><br>${esc(l.issue)}<br><span class="mu">→ ${esc(l.fix||'')}</span></div></div>`).join('')||'<div class="it mu">還沒有練習紀錄</div>'}</div>`}
 function set(e){
- const{songs,sess}=ctx(e),r=(p,t)=>`<span class="tag">${t}<button class="x" data-a="del" data-p="${p}">✕</button></span> `;
- return `<h2>新增活動</h2><div class="row"><input type="text" id="e_n" placeholder="活動名稱"><input type="date" id="e_d"><input type="text" id="e_p" placeholder="地點"><button class="p" data-a="addev">新增</button></div>
- ${e?`<h2>目前活動：${esc(e.name)}</h2><p class="mu">曲目</p><div class="row"><input type="text" id="s_t" placeholder="曲名"><input type="text" id="s_k" placeholder="Key（如 女key）" style="max-width:130px"><input type="text" id="s_l" placeholder="連結（https://…，可不填）"><button class="p" data-a="addsong">新增曲目</button></div><div>${songs.map(s=>`<div class="row"><input type="text" value="${esc(s.title)}" data-a="song_t" data-id="${s.id}"><input type="text" value="${esc(s.key||'')}" data-a="song_k" data-id="${s.id}" style="max-width:110px"><input type="text" value="${esc(s.link||'')}" placeholder="連結（https://…）" data-a="song_l" data-id="${s.id}"><button class="x" data-a="del" data-p="songs/${s.id}">✕</button></div>`).join('')}</div>
- <p class="mu">練習場次</p><div class="row"><input type="date" id="x_d"><input type="text" id="x_l" placeholder="備註（如 彩排）"><button class="p" data-a="addses">新增場次</button></div><div>${sess.map(s=>`<div class="row"><input type="date" value="${esc(s.date)}" data-a="sesd" data-id="${s.id}"><input type="text" value="${esc(s.label||'')}" data-a="sesl" data-id="${s.id}"><button class="x" data-a="del" data-p="sessions/${s.id}">✕</button></div>`).join('')}</div><p class="mu">日期與備註可直接修改，修改後按 Enter 或點其他地方即自動儲存（出缺席紀錄會保留）。</p>`:''}
- ${e?`<h2>此活動參加名單</h2><p class="mu">取消勾選＝不參加此活動，會從曲目人選與出缺席隱藏（可用「顯示未參加者」暫時查看）。</p><div class="row" style="gap:16px">${S.members.map(m=>`<label><input type="checkbox" ${(e.out||[]).includes(m.id)?'':'checked'} data-a="out" data-m="${m.id}"> ${esc(m.name)}</label>`).join('')}</div>`:''}<h2>團員（所有活動共用）</h2><div class="row"><input type="text" id="m_n" placeholder="姓名"><select id="m_g"><option>女</option><option>男</option></select><button class="p" data-a="addm">新增</button></div><div>${S.members.map(m=>r('members/'+m.id,esc(m.name)+'（'+esc(m.gender||'')+'）')).join('')}</div>`}
-const V=id=>($('#'+id)?.value||'').trim();
+ const{songs,sess}=ctx(e);
+ return `<h2>設定（唯讀）</h2>${e?`<div class="c"><b>${esc(e.name)}</b><span>${esc(e.date)} ${esc(e.place||'')}</span></div><h2>曲目</h2><div class="c">${songs.map(s=>`<div class="it">${ttl(s)} <span class="mu">${esc(s.key||'')} · ${esc(ST[s.status]||'未練')}</span></div>`).join('')||'<span class="mu">尚無曲目</span>'}<h2>練習場次</h2>${sess.map(s=>`<div class="it">${esc(s.date)} ${esc(s.label||'')}</div>`).join('')||'<span class="mu">尚無場次</span>'}</div>`:''}<h2>團員</h2><div class="c">${S.members.map(m=>`<div class="it">${esc(m.name)} <span class="mu">${esc(m.gender||'')}</span></div>`).join('')||'<span class="mu">尚無團員</span>'}</div>`}
 document.addEventListener('click',async ev_=>{
- const b=ev_.target.closest('[data-t],[data-a]');if(!b)return;const d=b.dataset,e=E();
+ const b=ev_.target.closest('[data-t],[data-a]');if(!b)return;const d=b.dataset;
  if(d.t){tab=d.t;edit=false;render();return}
  try{switch(d.a){
   case'edit':edit=!edit;render();break;
   case'showout':showOut=!showOut;render();break;
-  case'lead':{const s=S.songs.find(x=>x.id===d.s),L=LD(s),n=L.includes(d.m)?L.filter(x=>x!==d.m):[...L,d.m];await db.doc('songs/'+d.s).update({leaders:n,leader:''});break}
-  case'att':{const c=(S.att[d.s]||{})[d.m]||'?';await db.doc('attendance/'+d.s).set({...(S.att[d.s]||{}),[d.m]:{y:'n',n:'?','?':'y'}[c]});break}
-  case'del':if(confirm('確定刪除？'))await db.doc(d.p).delete();break;
-  case'addlog':if(V('l_i'))await db.collection('logs').add({eventId:e.id,sessionId:V('l_s'),songId:V('l_g'),issue:V('l_i'),fix:V('l_f'),done:false,ts:Date.now()});break;
-  case'addev':if(V('e_n')&&V('e_d')){const r=await db.collection('events').add({name:V('e_n'),date:V('e_d'),place:V('e_p')});ev=r.id;try{localStorage.setItem('ev',ev)}catch(x){}}break;
-  case'addsong':if(V('s_t'))await db.collection('songs').add({eventId:e.id,title:V('s_t'),key:V('s_k'),link:V('s_l'),leaders:[],leader:'',status:'todo',order:Date.now()});break;
-  case'addses':if(V('x_d'))await db.collection('sessions').add({eventId:e.id,date:V('x_d'),label:V('x_l')});break;
-  case'addm':if(V('m_n'))await db.collection('members').add({name:V('m_n'),gender:V('m_g')});break;
+  case'att':{
+   const c=(S.att[d.s]||{})[d.m]||'?',value={y:'n',n:'?','?':'y'}[c];
+   await db.doc(`attendance/${d.s}__${d.m}`).set({sessionId:d.s,memberId:d.m,value});
+   break;
+  }
  }}catch(x){$('#msg').textContent='無法儲存（可能沒有編輯權限）：'+(x.message||x.code)}
 });
 document.addEventListener('change',async c=>{
  const t=c.target,d=t.dataset;if(!d.a)return;
  try{
   if(d.a==='ev'){ev=t.value;try{localStorage.setItem('ev',ev)}catch(x){}render()}
-  if(d.a==='status')await db.doc('songs/'+d.s).update({status:t.value});
-  if(d.a==='out'){const o=new Set(E().out||[]);t.checked?o.delete(d.m):o.add(d.m);await db.doc('events/'+E().id).update({out:[...o]})}
-  if(d.a==='sesl')await db.doc('sessions/'+d.id).update({label:t.value.trim()});
-  if(d.a==='sesd'&&t.value)await db.doc('sessions/'+d.id).update({date:t.value});
-  if(d.a==='song_t'&&t.value.trim())await db.doc('songs/'+d.id).update({title:t.value.trim()});
-  if(d.a==='song_k')await db.doc('songs/'+d.id).update({key:t.value.trim()});
-  if(d.a==='song_l'){const u=t.value.trim();if(u&&!safe(u))$('#msg').textContent='連結需以 http:// 或 https:// 開頭';else await db.doc('songs/'+d.id).update({link:u})}
-  if(d.a==='done')await db.doc('logs/'+d.id).update({done:t.checked});
-  if(d.a==='score'){const n=Math.min(10,Math.max(1,+t.value));await db.doc('scores/'+d.m).set({...(S.scores[d.m]||{}),[d.s]:n})}
+  if(d.a==='score'){
+   const n=Number(t.value);
+   if(!Number.isInteger(n)||n<1||n>10){$('#msg').textContent='分數請輸入 1 到 10 的整數';return}
+   await db.doc(`scores/${d.m}__${d.s}`).set({memberId:d.m,songId:d.s,value:n});
+   $('#msg').textContent='';
+  }
  }catch(x){$('#msg').textContent='無法儲存：'+(x.message||x.code)}
 });
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pend)render()},50));
-(async()=>{
- for(let i=0;i<50&&!window.claude;i++)await new Promise(r=>setTimeout(r,100));
- try{db=await window.claude.use('db')}catch(x){}
- if(!db){$('#app').textContent='需要登入 Claude 才能讀寫資料。';return}
- sub('events',d=>S.events=d);sub('members',d=>S.members=d.sort((a,b)=>(a.order||0)-(b.order||0)));sub('songs',d=>S.songs=d);sub('sessions',d=>S.sessions=d);
- mapSub('attendance','att');mapSub('scores','scores');sub('logs',d=>S.logs=d);
- setTimeout(()=>{if($('#app').textContent==='載入中…')render()},3000);
-})();
+function startDataListeners(){
+ sub('events',d=>S.events=d);
+ sub('members',d=>S.members=d.sort((a,b)=>(a.order||0)-(b.order||0)));
+ sub('songs',d=>S.songs=d);
+ sub('sessions',d=>S.sessions=d);
+ recordSub('attendance','att','sessionId','memberId');
+ recordSub('scores','scores','memberId','songId');
+ sub('logs',d=>S.logs=d);
+}
+const configReady=Object.values(FIREBASE_CONFIG).every(v=>v&&!v.startsWith('YOUR_'));
+if(!configReady){
+ $('#app').innerHTML='請先在 HTML 的 FIREBASE_CONFIG 填入 Firebase 網頁應用程式設定。';
+}else{
+ try{
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db=firebase.firestore();
+  startDataListeners();
+ }catch(error){
+  $('#app').textContent='Firebase 初始化失敗：'+(error.message||error.code);
+ }
+}
 </script></body></html>

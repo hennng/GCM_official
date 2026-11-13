@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function validAttendance(data, recordId) {
+      return data.keys().hasAll(['sessionId', 'memberId', 'value'])
+        && data.keys().hasOnly(['sessionId', 'memberId', 'value'])
+        && data.sessionId is string
+        && data.memberId is string
+        && data.value in ['y', 'n', '?']
+        && recordId == data.sessionId + '__' + data.memberId
+        && exists(/databases/$(database)/documents/sessions/$(data.sessionId))
+        && exists(/databases/$(database)/documents/members/$(data.memberId));
+    }
+
+    function validScore(data, recordId) {
+      return data.keys().hasAll(['memberId', 'songId', 'value'])
+        && data.keys().hasOnly(['memberId', 'songId', 'value'])
+        && data.memberId is string
+        && data.songId is string
+        && data.value is int
+        && data.value >= 1
+        && data.value <= 10
+        && recordId == data.memberId + '__' + data.songId
+        && exists(/databases/$(database)/documents/members/$(data.memberId))
+        && exists(/databases/$(database)/documents/songs/$(data.songId));
+    }
+
+    match /events/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /members/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /songs/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /sessions/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /logs/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /attendance/{recordId} {
+      allow read: if true;
+      allow create, update: if validAttendance(request.resource.data, recordId);
+      allow delete: if false;
+    }
+
+    match /scores/{recordId} {
+      allow read: if true;
+      allow create, update: if validScore(request.resource.data, recordId);
+      allow delete: if false;
+    }
+  }
+}
