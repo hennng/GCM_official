@@ -1,6 +1,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isEditor() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && exists(/databases/$(database)/documents/editors/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/editors/$(request.auth.token.email)).data.active == true;
+    }
+
     function validAttendance(data, recordId) {
       return data.keys().hasAll(['sessionId', 'memberId', 'value'])
         && data.keys().hasOnly(['sessionId', 'memberId', 'value'])
@@ -25,41 +32,50 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/songs/$(data.songId));
     }
 
+    match /editors/{email} {
+      allow read, write: if false;
+    }
+
+    match /editorStatus/{userId} {
+      allow get: if isEditor() && request.auth.uid == userId;
+      allow list, write: if false;
+    }
+
     match /events/{documentId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isEditor();
     }
 
     match /members/{documentId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isEditor();
     }
 
     match /songs/{documentId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isEditor();
     }
 
     match /sessions/{documentId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isEditor();
     }
 
     match /logs/{documentId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isEditor();
     }
 
     match /attendance/{recordId} {
       allow read: if true;
-      allow create, update: if validAttendance(request.resource.data, recordId);
-      allow delete: if false;
+      allow create, update: if isEditor() && validAttendance(request.resource.data, recordId);
+      allow delete: if isEditor();
     }
 
     match /scores/{recordId} {
       allow read: if true;
-      allow create, update: if validScore(request.resource.data, recordId);
-      allow delete: if false;
+      allow create, update: if isEditor() && validScore(request.resource.data, recordId);
+      allow delete: if isEditor();
     }
   }
 }

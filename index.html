@@ -47,13 +47,15 @@ const FIREBASE_CONFIG={
  appId:'1:921580347852:web:5f0a05f6b545ec37aafd69',
  measurementId:'G-BJ4TJKXWHW'
 };
-let db=null,auth=null,user=null,editor=false,ev=null,tab='home',edit=false,pend=false,showOut=false,editingDoc=null;
+let db=null,auth=null,user=null,editor=false,ev=null,tab='home',edit=false,pend=false,showOut=false,editingDoc=null,importing=false;
 try{ev=localStorage.getItem('ev')}catch(e){}
 const $=s=>document.querySelector(s);
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Date().toLocaleDateString('sv');
 const TABS=[['home','總覽'],['songs','曲目與人選'],['att','出缺席'],['log','練習紀錄'],['set','設定']];
 const ST={todo:'未練',wip:'練習中',ok:'已 OK'};
+const IMPORT_COLLECTIONS=['events','members','songs','sessions','attendance','scores','logs'];
+const IMPORT_ORDER=['events','members','songs','sessions','attendance','scores','logs'];
 const ADMIN_FIELDS={
  events:[['name','活動名稱','text'],['date','日期','date'],['place','地點','text'],['out','不參加團員','array']],
  members:[['name','團員姓名','text'],['gender','性別','text'],['order','排序','number']],
@@ -156,7 +158,90 @@ function adminCollection(kind,title){
  return `<details class="c" ${editingDoc?.kind===kind?'open':''}><summary><b style="display:inline;font-size:16px">${esc(title)}（${rows.length}）</b></summary><form data-admin-form="${kind}" class="row" style="align-items:end">${fields}<button class="p" type="submit">${record?'儲存修改':'新增'}</button>${record?'<button type="button" data-cancel-edit>取消</button>':''}</form><div class="c admin-list">${entries||'<span class="mu">尚無資料</span>'}</div></details>`;
 }
 function adminPanel(){
- return `<h2>資料管理（管理者）</h2><p class="mu">刪除會立即從 Firestore 移除文件，並不會自動刪除其關聯資料。</p>${adminCollection('events','活動')}${adminCollection('songs','曲目')}${adminCollection('members','團員')}${adminCollection('sessions','練習場次')}${adminCollection('logs','練習紀錄')}`
+ return `<h2>資料管理（管理者）</h2><p class="mu">刪除會立即從 Firestore 移除文件，並不會自動刪除其關聯資料。</p><div class="c"><b style="font-size:16px">批次匯入 Firestore JSON</b><p class="mu">只新增不存在的文件 ID；已存在的文件會略過，不會覆蓋。請選擇包含 events、members、songs、sessions、attendance、scores、logs 的匯出 JSON。</p><div class="row"><input id="importJson" type="file" accept=".json,application/json"><button type="button" class="p" data-a="import" ${importing?'disabled':''}>${importing?'匯入中…':'檢查並匯入 JSON'}</button></div></div>${adminCollection('events','活動')}${adminCollection('songs','曲目')}${adminCollection('members','團員')}${adminCollection('sessions','練習場次')}${adminCollection('logs','練習紀錄')}`
+}
+function validateImportPayload(data){
+ if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('JSON 最上層必須是物件');
+ const keys=Object.keys(data);
+ if(keys.length!==IMPORT_COLLECTIONS.length||IMPORT_COLLECTIONS.some(name=>!Object.hasOwn(data,name)))throw new Error('匯出檔必須包含 events、members、songs、sessions、attendance、scores、logs 七個集合');
+ for(const name of IMPORT_COLLECTIONS){
+  const rows=data[name];
+  if(!rows||typeof rows!=='object'||Array.isArray(rows))throw new Error(`${name} 必須是以文件 ID 為鍵的物件`);
+  for(const[id,record]of Object.entries(rows)){
+   if(!id||id.includes('/')||!record||typeof record!=='object'||Array.isArray(record))throw new Error(`${name} 有無效的文件 ID 或資料格式`);
+  }
+ }
+ const has=(collection,id)=>typeof id==='string'&&Object.hasOwn(data[collection],id);
+ for(const[id,x]of Object.entries(data.events)){
+  if(typeof x.name!=='string'||typeof x.date!=='string'||(x.out!==undefined&&!Array.isArray(x.out)))throw new Error(`events/${id} 的 name、date 或 out 格式不正確`);
+  for(const memberId of x.out||[])if(!has('members',memberId))throw new Error(`events/${id} 參照了不存在的團員 ${memberId}`);
+ }
+ for(const[id,x]of Object.entries(data.members))if(typeof x.name!=='string')throw new Error(`members/${id} 缺少 name`);
+ for(const[id,x]of Object.entries(data.songs)){
+  if(!has('events',x.eventId)||typeof x.title!=='string'||!['todo','wip','ok'].includes(x.status)||!Array.isArray(x.leaders||[]))throw new Error(`songs/${id} 的活動、曲名、狀態或領唱資料不正確`);
+  for(const memberId of x.leaders||[])if(!has('members',memberId))throw new Error(`songs/${id} 參照了不存在的團員 ${memberId}`);
+ }
+ for(const[id,x]of Object.entries(data.sessions))if(!has('events',x.eventId)||typeof x.date!=='string')throw new Error(`sessions/${id} 的活動或日期不正確`);
+ for(const[id,x]of Object.entries(data.attendance)){
+  if(!has('sessions',x.sessionId)||!has('members',x.memberId)||id!==`${x.sessionId}__${x.memberId}`||!['y','n','?'].includes(x.value))throw new Error(`attendance/${id} 的場次、團員、文件 ID 或出席值不正確`);
+ }
+ for(const[id,x]of Object.entries(data.scores)){
+  if(!has('members',x.memberId)||!has('songs',x.songId)||id!==`${x.memberId}__${x.songId}`||!Number.isInteger(x.value)||x.value<1||x.value>10)throw new Error(`scores/${id} 的團員、曲目、文件 ID 或分數不正確`);
+ }
+ for(const[id,x]of Object.entries(data.logs)){
+  if(!has('events',x.eventId)||(x.songId&& !has('songs',x.songId))||(x.sessionId&& !has('sessions',x.sessionId))||typeof x.issue!=='string')throw new Error(`logs/${id} 的活動、曲目、場次或問題欄位不正確`);
+ }
+ return data;
+}
+async function importExportJson(){
+ if(importing)return;
+ if(!isEditor()){$('#msg').textContent='請先以授權的管理者帳號登入';return}
+ const input=$('#importJson'),file=input?.files?.[0];
+ if(!file){$('#msg').textContent='請先選擇匯出 JSON 檔';return}
+ importing=true;
+ try{
+  const data=validateImportPayload(JSON.parse(await file.text()));
+  const existing={};
+  await Promise.all(IMPORT_COLLECTIONS.map(async name=>{
+   const snapshot=await db.collection(name).get();
+   existing[name]=new Set(snapshot.docs.map(doc=>doc.id));
+  }));
+  const counts=Object.fromEntries(IMPORT_COLLECTIONS.map(name=>{
+   const total=Object.keys(data[name]).length,skipped=Object.keys(data[name]).filter(id=>existing[name].has(id)).length;
+   return[name,{total,skipped,added:total-skipped}];
+  }));
+  const totalAdded=IMPORT_COLLECTIONS.reduce((n,name)=>n+counts[name].added,0);
+  const totalSkipped=IMPORT_COLLECTIONS.reduce((n,name)=>n+counts[name].skipped,0);
+  if(!totalAdded){$('#msg').textContent=`沒有新增資料；${totalSkipped} 筆文件 ID 已存在。`;return}
+  const detail=IMPORT_COLLECTIONS.map(name=>`${name}：新增 ${counts[name].added}、略過 ${counts[name].skipped}`).join('\n');
+  if(!confirm(`匯入前確認（相同 ID 會略過，不覆蓋）：\n${detail}\n\n共新增 ${totalAdded} 筆、略過 ${totalSkipped} 筆。繼續嗎？`))return;
+  let added=0,skipped=0,collection='';
+  for(const name of IMPORT_ORDER){
+   collection=name;
+   const entries=Object.entries(data[name]);
+   for(let i=0;i<entries.length;i+=10){
+    const chunk=entries.slice(i,i+10).map(([id,value])=>({ref:db.collection(name).doc(id),value}));
+    const result=await db.runTransaction(async transaction=>{
+     const snapshots=await Promise.all(chunk.map(item=>transaction.get(item.ref)));
+     let created=0;
+     snapshots.forEach((snapshot,index)=>{
+      if(snapshot.exists)return;
+      transaction.set(chunk[index].ref,chunk[index].value);
+      created++;
+     });
+     return{created,skipped:chunk.length-created};
+    });
+    added+=result.created;skipped+=result.skipped;
+   }
+  }
+  $('#msg').textContent=`匯入完成：新增 ${added} 筆、略過 ${skipped} 筆。`;
+ }catch(error){
+  $('#msg').textContent=`匯入失敗${collection?`（處理 ${collection} 時）`:''}：${error.message||error.code||error}`;
+ }finally{
+  importing=false;
+  if(input)input.value='';
+  render();
+ }
 }
 document.addEventListener('click',async ev_=>{
  const b=ev_.target.closest('[data-t],[data-a]');if(!b)return;const d=b.dataset;
@@ -164,6 +249,7 @@ document.addEventListener('click',async ev_=>{
  try{switch(d.a){
   case'edit':edit=!edit;render();break;
   case'showout':showOut=!showOut;render();break;
+  case'import':await importExportJson();break;
   case'att':{
    if(!isEditor())throw new Error('請先以授權的管理者帳號登入');
    const c=(S.att[d.s]||{})[d.m]||'?',value={y:'n',n:'?','?':'y'}[c];
