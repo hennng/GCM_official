@@ -30,8 +30,15 @@ td input{width:54px;padding:3px}
 .x{margin-left:auto;border:0;background:none;color:var(--mu)}
 .tag{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}
 .admin-list{padding:0}.admin-item{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--ln)}.admin-item:last-child{border:0}
+.stat-card{display:flex;flex-direction:column;justify-content:space-between;width:100%;text-align:left;border:1px solid var(--ln);background:var(--cd);padding:14px 16px;border-radius:12px;color:var(--tx);transition:transform .12s ease,box-shadow .12s ease, border-color .12s ease;box-shadow:0 2px 8px rgba(42,38,34,.04)}
+.stat-card:hover,.stat-card:focus-visible{transform:translateY(-1px);border-color:var(--ac);box-shadow:0 8px 18px rgba(180,86,47,.08)}
+.stat-card b{display:block;font-size:24px;line-height:1.2;margin-bottom:2px}.stat-card span{display:block;color:var(--mu);font-size:13px}.stat-card .mini{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+@media (max-width:720px){body{padding:0 10px 32px}.header,.row{gap:6px}.nav{padding-bottom:10px}.g{grid-template-columns:repeat(2,minmax(140px,1fr))}.c b{font-size:22px}.row input[type=text],.row textarea{min-width:0}.}
+@media (max-width:520px){header{display:block}.header h1{font-size:18px}.w{max-width:100%}.g{grid-template-columns:1fr}.sc{border-radius:10px}.table-shell{overflow-x:auto}.th:first-child,td:first-child{position:static}.button,.row>*{width:100%}.nav button{flex:0 0 auto}.header .row{display:flex;flex-direction:column;align-items:stretch}.#evsel{width:100%}.row{display:flex;flex-wrap:wrap}.}
+@media (min-width: 961px){.row{align-items:center}}
 </style></head><body><div class="w">
-<header><h1>🎶 讚頌團 練習儀表板</h1><div class="row"><select id="evsel" data-a="ev" aria-label="選擇活動"></select><button id="authBtn" class="p" type="button">使用 Google 登入</button><span id="authState" class="mu">公開瀏覽</span></div></header>
+<header><h1>🎶 讚頌團 練習儀表板</h1><div class="row"><select id="evsel" data-a="ev" aria-label="選擇活動"></select><button id="authBtn" class="p" type="button">使用 Google 登入</button></div></header>
+<div id="authState" class="mu"></div>
 <nav id="nav"></nav><div id="msg" class="mu"></div><div id="app">載入中…</div></div>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -50,7 +57,7 @@ const FIREBASE_CONFIG={
 let db=null,auth=null,user=null,editor=false,ev=null,tab='home',edit=false,pend=false,showOut=false,editingDoc=null,importing=false;
 try{ev=localStorage.getItem('ev')}catch(e){}
 const $=s=>document.querySelector(s);
-const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const today=()=>new Date().toLocaleDateString('sv');
 const TABS=[['home','總覽'],['songs','曲目與人選'],['att','出缺席'],['log','練習紀錄'],['set','設定']];
 const ST={todo:'未練',wip:'練習中',ok:'已 OK'};
@@ -61,7 +68,7 @@ const ADMIN_FIELDS={
  members:[['name','團員姓名','text'],['gender','性別','text'],['order','排序','number']],
  songs:[['eventId','活動','select','events'],['title','曲目名稱','text'],['key','Key','text'],['leaders','領唱團員','array'],['status','狀態','select','status'],['link','連結','url'],['order','排序','number']],
  sessions:[['eventId','活動','select','events'],['date','日期','date'],['label','場次標籤','text']],
- logs:[['eventId','活動','select','events'],['songId','曲目 ID（空白代表整體）','select','songs'],['sessionId','場次 ID（可留空）','select','sessions'],['issue','問題','text'],['fix','改善方式','text'],['done','已完成','checkbox']]
+ logs:[['eventId','活動','select','events'],['songId','曲目 ID（空白代表整體）','select','songs'],['sessionId','場次 ID（可留空）','select','sessions'],['issue','問題','text'],['fix','改善方式','text'],['done','已完成','checkbox'],['ts','時間戳','number']]
 };
 const isEditor=()=>!!user&&editor;
 function sub(name,fn){return db.collection(name).onSnapshot(q=>{fn(q.docs.map(d=>({id:d.id,...d.data()})));render()},e=>{$('#msg').textContent='資料讀取失敗：'+(e.message||e.code)})}
@@ -91,7 +98,7 @@ function render(){
   $('#authState').textContent=user?(isEditor()?`管理者：${user.email}`:`已登入：${user.email||'Google 帳號'}（僅可瀏覽）`):'公開瀏覽';
   $('#nav').innerHTML=TABS.map(([k,v])=>`<button class="${tab===k?'on':''}" data-t="${k}">${v}</button>`).join('');
   const e=E();
-  $('#evsel').innerHTML=[...S.events].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>`<option value="${esc(x.id)}" ${e&&x.id===e.id?'selected':''}>${esc(dateText(x.date))} ${esc(x.name)}</option>`).join('');
+  $('#evsel').innerHTML=[...S.events].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>`<option value="${esc(x.id)}" ${e&&x.id===e.id?'selected':''}>${esc(dateText(x.date))} ${esc(x.name||'')}</option>`).join('');
   if(!e&&tab!=='set'){$('#app').innerHTML='<p>尚無活動，請到「設定」新增第一個活動。</p>';return}
   $('#app').innerHTML=({home,songs,att,log,set})[tab](e);
  }catch(error){
@@ -110,29 +117,38 @@ function home(e){
  const{songs,sess}=ctx(e),ok=songs.filter(s=>s.status==='ok').length,nol=songs.filter(s=>!LD(s).some(id=>!(e.out||[]).includes(id))),open=S.logs.filter(l=>l.eventId===e.id&&!l.done);
  const days=Math.ceil((new Date(e.date)-new Date(today()))/864e5),nx=sess.find(s=>typeof s.date==='string'&&s.date>=today());
  const act=S.members.filter(m=>!(e.out||[]).includes(m.id)),cnt=nx?act.filter(m=>(S.att[nx.id]||{})[m.id]==='y').length:0;
- return `<div class="c" style="margin-bottom:10px"><b>${esc(e.name)}</b><span>${esc(e.date)} ${esc(e.place||'')} · ${days>=0?'倒數 '+days+' 天':'已結束'}</span></div>
- <div class="g"><div class="c"><b>${ok}/${songs.length}</b><span>曲目已 OK</span></div><div class="c"><b>${nol.length}</b><span>尚未指定領唱</span></div>
- <div class="c"><b>${nx?cnt+'/'+act.length:'–'}</b><span>${nx?'下次練習 '+esc(dateText(nx.date).slice(5))+' 可到':'無待練場次'}</span></div><div class="c"><b>${open.length}</b><span>未解決改善項目</span></div></div>
- <h2>待辦</h2><div class="c" style="padding:0">${[...nol.map(s=>`<div class="it">🎤 〈${esc(s.title)}〉還沒有領唱人選</div>`),...open.map(l=>`<div class="it">🔧 〈${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}〉${esc(l.issue)} <span class="mu">→ ${esc(l.fix||'待討論')}</span></div>`)].join('')||'<div class="it mu">目前沒有待辦 🎉</div>'}</div>`}
+ const stats=[
+  {label:'曲目已 OK', value:`${ok}/${songs.length}`, tab:'songs', hint:'查看曲目與分數'},
+  {label:'尚未指定領唱', value:String(nol.length), tab:'songs', hint:'補齊領唱人選'},
+  {label:nx?`下次練習 ${dateText(nx.date).slice(5)}`:'無待練場次', value:nx?`${cnt}/${act.length}`:'–', tab:nx?'att':'att', hint:nx?'查看出缺席':'安排場次'},
+  {label:'未解決改善項目', value:String(open.length), tab:'log', hint:'直接新增或修正'}
+ ];
+ return `<div class="g">${stats.map(item=>`<button type="button" class="stat-card" data-t="${item.tab}"><span class="mini">${esc(item.label)}</span><b>${esc(item.value)}</b><span>${esc(item.hint)}</span></button>`).join('')}</div>
+ <h2>待辦</h2><div class="c" style="padding:0">${[...nol.map(s=>`<button type="button" class="it" data-t="songs" style="width:100%;text-align:left;background:none;border:0;padding:10px 12px;cursor:pointer"><div>🎤 〈${esc(s.title)}〉還沒有領唱人選</div></button>`),...open.map(l=>`<button type="button" class="it" data-t="log" style="width:100%;text-align:left;background:none;border:0;padding:10px 12px;cursor:pointer"><div>🔧 〈${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}〉${esc(l.issue || '待處理')}</div></button>`)].join('')||'<div class="it mu">目前沒有待辦 🎉</div>'}</div>`;
+}
 function heat(n){return n==null?'':`background:hsl(${(n-1)*13} 60% 50% / .3)`}
 function songs(e){
  const{songs}=ctx(e),M=AM(e);
- return `<div class="row"><span class="mu">${isEditor()?'登入管理者可編輯分數。':'登入授權的管理者帳號後可編輯分數。'}</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">顯示未參加者</button>${isEditor()?`<button data-a="edit" class="${edit?'on':''}">${edit?'完成編輯分數':'編輯分數'}</button>`:''}</div>
+ return `<div class="row"><span class="mu">${isEditor()?'登入管理者可編輯分數。':'登入授權的管理者帳號後可編輯分數。'}</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">${showOut?'隱藏未參加者':'顯示未參加者'}</button><button data-a="edit" class="${edit?'on':''}">${edit?'完成編輯分數':'編輯分數'}</button></div>
  <div class="sc"><table><tr><th>曲目</th><th>Key</th><th>領唱</th>${M.map(m=>`<th>${esc(m.name)}${(e.out||[]).includes(m.id)?'<br><span class="q">不參加</span>':''}</th>`).join('')}<th>狀態</th></tr>
- ${songs.map(s=>`<tr><td>${ttl(s)}</td><td>${esc(s.key||'')}</td><td>${esc(LD(s).filter(id=>M.some(m=>m.id===id)).map(mn).join('、'))||'<span class="q">–</span>'}</td>${M.map(m=>{const raw=(S.scores[m.id]||{})[s.id],v=Number.isInteger(raw)&&raw>=1&&raw<=10?raw:null;return edit?`<td><input type="number" min="1" max="10" step="1" value="${v??''}" data-a="score" data-s="${s.id}" data-m="${m.id}"></td>`:`<td class="${LD(s).includes(m.id)?'sel':''}" style="${heat(v)}">${v??'–'}</td>`}).join('')}
- <td>${esc(ST[s.status]||'未練')}</td></tr>`).join('')}</table></div>`}
+ ${songs.map(s=>`<tr><td>${ttl(s)}</td><td>${esc(s.key||'')}</td><td>${esc(LD(s).filter(id=>M.some(m=>m.id===id)).map(mn).join('、'))||'<span class="q">–</span>'}</td>${M.map(m=>{const raw=(S.scores[m.id]||{})[s.id];return edit?`<td><input type="number" min="1" max="10" value="${raw??''}" data-a="score" data-s="${s.id}" data-m="${m.id}"></td>`:`<td class="h ${LD(s).includes(m.id)?'sel':''}" style="${heat(raw)}" data-a="lead" data-s="${s.id}" data-m="${m.id}">${raw??'–'}</td>`}).join('')}
+ <td><select data-a="status" data-s="${s.id}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${s.status===k?'selected':''}>${v}</option>`).join('')}</select></td></tr>`).join('')}</table></div>`}
 function att(e){
  const{sess}=ctx(e),M=AM(e),t=today(),sym={y:'<span class="y">✓</span>',n:'<span class="n">請假</span>','?':'<span class="q">?</span>'};
- return `<div class="row"><span class="mu">${isEditor()?'管理者可點格子切換：✓ 出席 → 請假 → ? 未確認。':'登入授權的管理者帳號後可修改出席狀態。'}</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">顯示未參加者</button></div><div class="sc"><table><tr><th>成員</th>${sess.map(s=>`<th class="${s.date<t?'dim':''}">${esc(dateText(s.date).slice(5)||'日期未設定')}<br>${esc(s.label||'')}</th>`).join('')}</tr>
- ${M.map(m=>`<tr><td>${esc(m.name)}${(e.out||[]).includes(m.id)?' <span class="q">（不參加）</span>':''}</td>${sess.map(s=>`<td class="${isEditor()?'h ':''}${s.date<t?'dim':''}" ${isEditor()?`data-a="att" data-s="${esc(s.id)}" data-m="${esc(m.id)}"`:''}>${sym[(S.att[s.id]||{})[m.id]||'?']}</td>`).join('')}</tr>`).join('')}
+ return `<div class="row"><span class="mu">${isEditor()?'管理者可點格子切換：✓ 出席 → 請假 → ? 未確認。':'登入授權的管理者帳號後可修改出席狀態。'}</span><button data-a="showout" class="${showOut?'on':''}" style="margin-left:auto">${showOut?'隱藏未參加者':'顯示未參加者'}</button></div><div class="sc"><table><tr><th>成員</th>${sess.map(s=>`<th class="${s.date<t?'dim':''}">${esc(dateText(s.date).slice(5))}<br>${esc(s.label||'')}</th>`).join('')}</tr>
+ ${M.map(m=>`<tr><td>${esc(m.name)}${(e.out||[]).includes(m.id)?' <span class="q">（不參加）</span>':''}</td>${sess.map(s=>`<td class="h ${s.date<t?'dim':''}" data-a="att" data-s="${s.id}" data-m="${m.id}">${sym[(S.att[s.id]||{})[m.id]||'?']}</td>`).join('')}</tr>`).join('')}
  <tr><td><b>出席人數</b></td>${sess.map(s=>`<td><b>${M.filter(m=>(S.att[s.id]||{})[m.id]==='y').length}/${M.length}</b></td>`).join('')}</tr></table></div>`}
 function log(e){
  const L=S.logs.filter(l=>l.eventId===e.id).sort((a,b)=>b.ts-a.ts);
- return `<h2>練習紀錄</h2><div class="c" style="padding:0">${L.map(l=>`<div class="it"><div style="${l.done?'opacity:.5':''}"><b>${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}</b> <span class="tag">${esc(dateText(S.sessions.find(s=>s.id===l.sessionId)?.date).slice(5))}</span><br>${esc(l.issue)}<br><span class="mu">→ ${esc(l.fix||'')}</span></div></div>`).join('')||'<div class="it mu">還沒有練習紀錄</div>'}</div>`}
+ const sessionOptions=S.sessions.filter(s=>s.eventId===e.id).sort((a,b)=>dateText(a.date).localeCompare(dateText(b.date))).map(s=>`<option value="${esc(s.id)}">${esc(dateText(s.date).slice(5))} ${esc(s.label||'')}</option>`).join('');
+ const songOptions=S.songs.filter(s=>s.eventId===e.id).sort(byo).map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join('');
+ return `<div class="c"><h2 style="margin-top:0">新增練習紀錄</h2><div class="row"><select id="logSession"><option value="">選擇場次</option>${sessionOptions}</select><select id="logSong"><option value="">整體</option>${songOptions}</select></div><div class="row"><input type="text" id="logIssue" placeholder="問題（例：副歌換氣不齊）"></div><div class="row"><input type="text" id="logFix" placeholder="改善方式 / 下次要練習的"><button class="p" type="button" data-a="addlog">新增紀錄</button></div></div>
+ <h2>紀錄</h2><div class="c" style="padding:0">${L.map(l=>`<div class="it"><input type="checkbox" ${l.done?'checked':''} data-a="done" data-id="${l.id}"><div style="${l.done?'opacity:.5':''}"><b>${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}</b> <span class="tag">${esc(S.sessions.find(s=>s.id===l.sessionId)?.date.slice(5)||'')}</span><br>${esc(l.issue||'')}<br><span class="mu">→ ${esc(l.fix||'')}</span></div><button class="x" data-a="del" data-p="logs/${l.id}">✕</button></div>`).join('')||'<div class="it mu">還沒有練習紀錄</div>'}</div>`
+}
 function set(e){
  const{songs,sess}=ctx(e);
- const summary=e?`<div class="c"><b>${esc(e.name)}</b><span>${esc(dateText(e.date))} ${esc(e.place||'')}</span></div><h2>曲目</h2><div class="c">${songs.map(s=>`<div class="it">${ttl(s)} <span class="mu">${esc(s.key||'')} · ${esc(ST[s.status]||'未練')}</span></div>`).join('')||'<span class="mu">尚無曲目</span>'}<h2>練習場次</h2>${sess.map(s=>`<div class="it">${esc(dateText(s.date)||'日期未設定')} ${esc(s.label||'')}</div>`).join('')||'<span class="mu">尚無場次</span>'}</div>`:'<p>目前沒有活動資料；請確認 Firestore 的 events 集合有活動文件。</p>';
- return `<h2>設定</h2>${summary}<h2>團員</h2><div class="c">${S.members.map(m=>`<div class="it">${esc(m.name)} <span class="mu">${esc(m.gender||'')}</span></div>`).join('')||'<span class="mu">尚無團員</span>'}</div>${isEditor()?adminPanel():`<p class="mu">登入授權的 Google 管理者帳號後，即可管理活動資料。</p>`}`
+ const summary=e?`<div class="c"><b>${esc(e.name)}</b><span>${esc(dateText(e.date))} ${esc(e.place||'')}</span></div><h2>曲目</h2><div class="c">${songs.map(s=>`<div class="it">${ttl(s)} <span class="mu">${esc(ST[s.status]||'未練')}</span></div>`).join('')||'<span class="mu">尚無曲目</span>'}</div><h2>場次</h2><div class="c">${sess.map(s=>`<div class="it"><span>${esc(dateText(s.date))} ${esc(s.label||'')}</span></div>`).join('')||'<span class="mu">尚無場次</span>'}</div>`:'';
+ return `<h2>設定</h2>${summary}<h2>資料管理（管理者）</h2>${adminPanel()}`;
 }
 function adminField(kind,field,record){
  const[name,label,type,source]=field,value=name==='leaders'&&record?LD(record):record?.[name];
@@ -155,15 +171,16 @@ function adminCollection(kind,title){
   const label=x.name||x.title||x.label||x.issue||x.id;
   return `<div class="admin-item"><span>${esc(label)}</span><code class="mu">${esc(x.id)}</code><button type="button" data-edit-kind="${kind}" data-id="${esc(x.id)}">編輯</button><button type="button" data-delete-kind="${kind}" data-id="${esc(x.id)}">刪除</button></div>`;
  }).join('');
- return `<details class="c" ${editingDoc?.kind===kind?'open':''}><summary><b style="display:inline;font-size:16px">${esc(title)}（${rows.length}）</b></summary><form data-admin-form="${kind}" class="row" style="align-items:end">${fields}<button class="p" type="submit">${record?'儲存修改':'新增'}</button>${record?'<button type="button" data-cancel-edit>取消</button>':''}</form><div class="c admin-list">${entries||'<span class="mu">尚無資料</span>'}</div></details>`;
+ return `<details class="c" ${editingDoc?.kind===kind?'open':''}><summary><b style="display:inline;font-size:16px">${esc(title)}（${rows.length}）</b></summary><form data-admin-form="${kind}" class="row" style="display:block">${fields}<div class="row"><button class="p" type="submit">${record?'更新':'新增'}</button>${record?`<button type="button" data-cancel-edit>取消</button>`:''}</div></form><div class="admin-list">${entries}</div></details>`;
 }
 function adminPanel(){
- return `<h2>資料管理（管理者）</h2><p class="mu">刪除會立即從 Firestore 移除文件，並不會自動刪除其關聯資料。</p><div class="c"><b style="font-size:16px">批次匯入 Firestore JSON</b><p class="mu">只新增不存在的文件 ID；已存在的文件會略過，不會覆蓋。請選擇包含 events、members、songs、sessions、attendance、scores、logs 的匯出 JSON。</p><div class="row"><input id="importJson" type="file" accept=".json,application/json"><button type="button" class="p" data-a="import" ${importing?'disabled':''}>${importing?'匯入中…':'檢查並匯入 JSON'}</button></div></div>${adminCollection('events','活動')}${adminCollection('songs','曲目')}${adminCollection('members','團員')}${adminCollection('sessions','練習場次')}${adminCollection('logs','練習紀錄')}`
+ return `<div class="c"><b style="font-size:16px">批次匯入/匯出</b><div class="row"><input id="importJson" type="file" accept="application/json"><button type="button" data-a="import">匯入 JSON</button></div><button type="button" data-a="export">匯出 JSON</button></div>
+ ${adminCollection('events','活動')} ${adminCollection('members','團員')} ${adminCollection('songs','曲目')} ${adminCollection('sessions','場次')} ${adminCollection('logs','紀錄')}`;
 }
 function validateImportPayload(data){
  if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('JSON 最上層必須是物件');
  const keys=Object.keys(data);
- if(keys.length!==IMPORT_COLLECTIONS.length||IMPORT_COLLECTIONS.some(name=>!Object.hasOwn(data,name)))throw new Error('匯出檔必須包含 events、members、songs、sessions、attendance、scores、logs 七個集合');
+ if(keys.length!==IMPORT_COLLECTIONS.length||IMPORT_COLLECTIONS.some(name=>!Object.hasOwn(data,name)))throw new Error('匯出檔必須包含 events、members、songs、sessions、attendance、scores、logs');
  for(const name of IMPORT_COLLECTIONS){
   const rows=data[name];
   if(!rows||typeof rows!=='object'||Array.isArray(rows))throw new Error(`${name} 必須是以文件 ID 為鍵的物件`);
@@ -172,25 +189,13 @@ function validateImportPayload(data){
   }
  }
  const has=(collection,id)=>typeof id==='string'&&Object.hasOwn(data[collection],id);
- for(const[id,x]of Object.entries(data.events)){
-  if(typeof x.name!=='string'||typeof x.date!=='string'||(x.out!==undefined&&!Array.isArray(x.out)))throw new Error(`events/${id} 的 name、date 或 out 格式不正確`);
-  for(const memberId of x.out||[])if(!has('members',memberId))throw new Error(`events/${id} 參照了不存在的團員 ${memberId}`);
- }
+ for(const[id,x]of Object.entries(data.events)){if(typeof x.name!=='string'||typeof x.date!=='string'||(x.out!==undefined&&!Array.isArray(x.out)))throw new Error(`events/${id} 的 name、date 或 out 格式不正確`);for(const memberId of x.out||[])if(!has('members',memberId))throw new Error(`events/${id} 參照了不存在的團員 ${memberId}`);}
  for(const[id,x]of Object.entries(data.members))if(typeof x.name!=='string')throw new Error(`members/${id} 缺少 name`);
- for(const[id,x]of Object.entries(data.songs)){
-  if(!has('events',x.eventId)||typeof x.title!=='string'||!['todo','wip','ok'].includes(x.status)||!Array.isArray(x.leaders||[]))throw new Error(`songs/${id} 的活動、曲名、狀態或領唱資料不正確`);
-  for(const memberId of x.leaders||[])if(!has('members',memberId))throw new Error(`songs/${id} 參照了不存在的團員 ${memberId}`);
- }
+ for(const[id,x]of Object.entries(data.songs)){if(!has('events',x.eventId)||typeof x.title!=='string'||!['todo','wip','ok'].includes(x.status)||!Array.isArray(x.leaders||[]))throw new Error(`songs/${id} 的活動、曲名、狀態或領唱資料不正確`);for(const memberId of x.leaders||[])if(!has('members',memberId))throw new Error(`songs/${id} 參照了不存在的團員 ${memberId}`);}
  for(const[id,x]of Object.entries(data.sessions))if(!has('events',x.eventId)||typeof x.date!=='string')throw new Error(`sessions/${id} 的活動或日期不正確`);
- for(const[id,x]of Object.entries(data.attendance)){
-  if(!has('sessions',x.sessionId)||!has('members',x.memberId)||id!==`${x.sessionId}__${x.memberId}`||!['y','n','?'].includes(x.value))throw new Error(`attendance/${id} 的場次、團員、文件 ID 或出席值不正確`);
- }
- for(const[id,x]of Object.entries(data.scores)){
-  if(!has('members',x.memberId)||!has('songs',x.songId)||id!==`${x.memberId}__${x.songId}`||!Number.isInteger(x.value)||x.value<1||x.value>10)throw new Error(`scores/${id} 的團員、曲目、文件 ID 或分數不正確`);
- }
- for(const[id,x]of Object.entries(data.logs)){
-  if(!has('events',x.eventId)||(x.songId&& !has('songs',x.songId))||(x.sessionId&& !has('sessions',x.sessionId))||typeof x.issue!=='string')throw new Error(`logs/${id} 的活動、曲目、場次或問題欄位不正確`);
- }
+ for(const[id,x]of Object.entries(data.attendance)){if(!has('sessions',x.sessionId)||!has('members',x.memberId)||id!==`${x.sessionId}__${x.memberId}`||!['y','n','?'].includes(x.value))throw new Error(`attendance/${id} 的場次、團員、文件 ID 或值不正確`);}
+ for(const[id,x]of Object.entries(data.scores)){if(!has('members',x.memberId)||!has('songs',x.songId)||id!==`${x.memberId}__${x.songId}`||!Number.isInteger(x.value)||x.value<1||x.value>10)throw new Error(`scores/${id} 的團員、曲目、文件 ID 或分數不正確`);}
+ for(const[id,x]of Object.entries(data.logs)){if(!has('events',x.eventId)||(x.songId&& !has('songs',x.songId))||(x.sessionId&& !has('sessions',x.sessionId))||typeof x.issue!=='string')throw new Error(`logs/${id} 的活動、曲目、場次或問題不正確`);}
  return data;
 }
 async function importExportJson(){
@@ -250,12 +255,49 @@ document.addEventListener('click',async ev_=>{
   case'edit':edit=!edit;render();break;
   case'showout':showOut=!showOut;render();break;
   case'import':await importExportJson();break;
+  case'export':{
+    if(!isEditor())throw new Error('請先以授權的管理者帳號登入');
+    const payload={};
+    for(const name of IMPORT_COLLECTIONS){
+      const rows={};
+      const snap=await db.collection(name).get();
+      snap.forEach(doc=>rows[doc.id]=doc.data());
+      payload[name]=rows;
+    }
+    const href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(payload,null,2));
+    const a=document.createElement('a');
+    a.href=href;a.download='gcm-export.json';a.click();
+    $('#msg').textContent='已匯出 JSON';
+    break;
+  }
+  case'addlog':{
+   const form=e=>$('#'+e);
+   const sessionId=form('logSession')?.value||'';
+   const songId=form('logSong')?.value||'';
+   const issue=form('logIssue')?.value.trim()||'';
+   const fix=form('logFix')?.value.trim()||'';
+   if(!issue){$('#msg').textContent='請填寫問題內容';return;}
+   await db.collection('logs').add({eventId:ev,sessionId:songId?sessionId:'',songId:songId,issue,fix,done:false,ts:Date.now()});
+   $('#msg').textContent='已新增練習紀錄';
+   form('logIssue').value='';form('logFix').value='';
+   break;
+  }
   case'att':{
    if(!isEditor())throw new Error('請先以授權的管理者帳號登入');
    const c=(S.att[d.s]||{})[d.m]||'?',value={y:'n',n:'?','?':'y'}[c];
    await db.doc(`attendance/${d.s}__${d.m}`).set({sessionId:d.s,memberId:d.m,value});
    break;
   }
+  case'lead':{
+   if(!isEditor())throw new Error('請先以授權的管理者帳號登入');
+   const song=S.songs.find(x=>x.id===d.s);if(!song)return;
+   const next=Array.isArray(song.leaders)?song.leaders:[];
+   const has=next.includes(d.m);
+   const leaders=has?next.filter(id=>id!==d.m):[...next,d.m];
+   await db.collection('songs').doc(d.s).update({leaders});
+   break;
+  }
+  case'del':if(confirm('確定刪除？'))await db.doc(d.p).delete();break;
  }}catch(x){$('#msg').textContent='無法儲存（可能沒有編輯權限）：'+(x.message||x.code)}
 });
 document.addEventListener('click',async ev_=>{
@@ -287,6 +329,7 @@ document.addEventListener('submit',async ev_=>{
   const kind=form.dataset.adminForm,record=editingDoc?.kind===kind?S[kind].find(x=>x.id===editingDoc.id):null,data={};
   for(const field of ADMIN_FIELDS[kind]){
    const[name,label,type]=field,input=form.querySelector(`[data-field="${name}"]`);
+   if(!input)continue;
    if(type==='checkbox')data[name]=input.checked;
    else if(type==='array')data[name]=Array.from(input.selectedOptions,option=>option.value);
    else if(type==='number'){
@@ -309,6 +352,13 @@ document.addEventListener('change',async c=>{
  const t=c.target,d=t.dataset;if(!d.a)return;
  try{
   if(d.a==='ev'){ev=t.value;try{localStorage.setItem('ev',ev)}catch(x){}render()}
+  if(d.a==='status')await db.doc(`songs/${d.s}`).update({status:t.value});
+  if(d.a==='out'){
+   const current=new Set(E().out||[]);
+   if(t.checked)current.delete(d.m);else current.add(d.m);
+   await db.doc(`events/${E().id}`).update({out:[...current]});
+  }
+  if(d.a==='done')await db.doc(`logs/${d.id}`).update({done:t.checked});
   if(d.a==='score'){
    if(!isEditor())throw new Error('請先以授權的管理者帳號登入');
    const n=Number(t.value);
