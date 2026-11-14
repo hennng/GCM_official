@@ -10,10 +10,11 @@ service cloud.firestore {
 
     function validAttendance(data, recordId) {
       return data.keys().hasAll(['sessionId', 'memberId', 'value'])
-        && data.keys().hasOnly(['sessionId', 'memberId', 'value'])
+        && data.keys().hasOnly(['sessionId', 'memberId', 'value', 'reason'])
         && data.sessionId is string
         && data.memberId is string
         && data.value in ['y', 'n', '?']
+        && (!data.keys().hasAny(['reason']) || (data.reason is string && data.reason.size() <= 300))
         && recordId == data.sessionId + '__' + data.memberId
         && exists(/databases/$(database)/documents/sessions/$(data.sessionId))
         && exists(/databases/$(database)/documents/members/$(data.memberId));
