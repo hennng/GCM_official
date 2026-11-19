@@ -1,41 +1,205 @@
 <!doctype html>
-<html lang="zh-Hant">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>GCM領唱練習儀表板</title>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GCM 領唱練習儀表板</title>
 <style>
-:root{--bg:#faf8f5;--cd:#fff;--tx:#2a2622;--mu:#7a726a;--ln:#e7e1d9;--ac:#b4562f;--ok:#2f8f5b;--no:#c0443c;color-scheme:light}*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif;padding:0 14px 40px}.w{max-width:1000px;margin:auto}header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:16px 0 8px}h1{font-size:20px;margin:0}h2{font-size:16px;margin:22px 0 8px}nav{display:flex;gap:6px;overflow-x:auto;padding:6px 0 12px}nav button{white-space:nowrap}button,select,input,textarea{font:inherit;color:var(--tx);background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:6px 10px}button{cursor:pointer}button:disabled,select:disabled,input:disabled{opacity:.6;cursor:not-allowed}button.on,button.p{background:var(--ac);border-color:var(--ac);color:#fff}.auth,.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.row{margin:6px 0}.auth{justify-content:flex-end}.mu{color:var(--mu);font-size:13px}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.c{background:var(--cd);border:1px solid var(--ln);border-radius:12px;padding:12px 14px}.c b{display:block;font-size:21px}.c span{color:var(--mu);font-size:13px}.sc{overflow:auto;background:var(--cd);border:1px solid var(--ln);border-radius:12px}table{border-collapse:collapse;width:100%}th,td{padding:8px 10px;border-bottom:1px solid var(--ln);text-align:center;white-space:nowrap}th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--cd);z-index:1}th{font-weight:600;font-size:13px;color:var(--mu)}tr:last-child td{border-bottom:0}td.h{cursor:pointer;font-weight:600;position:relative}td.sel{outline:3px solid var(--ac);outline-offset:-3px}.y{color:var(--ok);font-weight:700}.n{color:var(--no);font-weight:700}.q{color:var(--mu)}.dim{opacity:.55}.it{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--ln)}.it:last-child{border:0}.x{margin-left:auto;border:0;background:none;color:var(--mu)}.tag{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}.admin-item{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--ln)}.admin-item button{margin-left:auto}.field{min-width:145px;flex:1}.message{min-height:1.5em}.reason-cell:hover::after,.reason-cell:focus::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);white-space:normal;min-width:130px;max-width:260px;padding:7px 9px;border-radius:7px;background:#2a2622;color:white;font-size:12px;font-weight:400;line-height:1.4;z-index:5;box-shadow:0 3px 12px #0003;pointer-events:none}.reason-cell:focus{outline:2px solid var(--ac);outline-offset:-2px}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1b1917;--cd:#262321;--tx:#f0ebe5;--mu:#a39b92;--ln:#3a3631;--ac:#e0875f;--ok:#55c488;--no:#e5766e;color-scheme:dark}}:root[data-theme=dark]{--bg:#1b1917;--cd:#262321;--tx:#f0ebe5;--mu:#a39b92;--ln:#3a3631;--ac:#e0875f;--ok:#55c488;--no:#e5766e;color-scheme:dark}@media(max-width:600px){body{padding:0 10px 30px}header{display:block}header .auth{justify-content:flex-start;margin-top:8px}.sc{border-radius:9px}th,td{padding:7px 8px}}
-</style>
-</head>
-<body><div class="w"><header><h1>🎶 讚頌團 練習儀表板</h1><div class="auth"><select id="evsel" data-a="ev" aria-label="選擇活動"></select><button id="authBtn" type="button">使用 Google 登入</button></div></header><nav id="nav"></nav><div id="authState" class="mu"></div><div id="msg" class="mu message" role="status" aria-live="polite"></div><div id="app">載入中…</div></div>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+:root{--bg:#f3f5f8;--cd:#fff;--tx:#1c2430;--mu:#6b7686;--ln:#dde2ea;--ac:#3b4ba8;--gd:#c8962e;--ok:#2e7d5b;--no:#c0453d;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#141a24;--cd:#1d2532;--tx:#eaeef5;--mu:#97a2b3;--ln:#2e3848;--ac:#8d9bf0;--gd:#e0b252;--ok:#58c496;--no:#ee7a72;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;padding:env(safe-area-inset-top) 14px calc(40px + env(safe-area-inset-bottom))}
+.w{max-width:980px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:18px 0 6px}
+h1{font-size:21px;margin:0;letter-spacing:.02em}h2{font-size:16px;margin:24px 0 8px}
+nav{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--ln);margin:6px 0 16px}
+nav button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:9px 14px;white-space:nowrap;color:var(--mu)}
+nav button.on{color:var(--tx);border-color:var(--ac);font-weight:600}
+button,select,input{font:inherit;color:var(--tx);background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:6px 10px}
+button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible,td.h:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button.on,button.p{background:var(--ac);border-color:var(--ac);color:#fff}button.d{color:var(--no)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.sp{flex:1}
+.row input[type=text],.row input[type=url]{flex:1;min-width:130px}
+.mu,small{color:var(--mu)}small{font-size:12px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.c{background:var(--cd);border:1px solid var(--ln);border-radius:10px;padding:12px 14px}
+.big{font-size:26px;font-weight:700;display:block;line-height:1.2}
+.bar{height:6px;border-radius:3px;background:var(--ln);margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.sc{overflow-x:auto;background:var(--cd);border:1px solid var(--ln);border-radius:10px}
+table{border-collapse:collapse;width:100%}th,td{padding:8px 10px;border-bottom:1px solid var(--ln);text-align:center;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--cd);z-index:1}
+th{font-size:13px;font-weight:600;color:var(--mu)}tr:last-child td{border-bottom:0}
+td.h{cursor:pointer;font-weight:600}td.sel{outline:3px solid var(--gd);outline-offset:-3px;font-weight:700}
+td input.sn{width:56px;padding:3px 6px}
+.y{color:var(--ok);font-weight:700}.n{color:var(--no)}.dim{opacity:.5}
+.it{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--ln)}.it:last-child{border:0}
+.tag{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}
+label.ck{display:inline-flex;gap:6px;align-items:center;margin-right:14px}
+a{color:var(--ac)}
+@media(prefers-reduced-motion:no-preference){button{transition:background .15s}}
+</style></head><body><div class="w">
+<header><h1>🎶 GCM 領唱練習儀表板</h1><div class="row"><select id="evsel" aria-label="選擇活動"></select><button id="auth">使用 Google 登入</button><small id="who">公開瀏覽</small></div></header>
+<nav id="nav"></nav><div id="msg" class="mu" role="status"></div><main id="app">載入中…</main></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
-'use strict';
-const FIREBASE_CONFIG={apiKey:'AIzaSyARhWjIkQacQPdNLaEY7bvsf9lIAKnfgZE',authDomain:'gcmofficial.firebaseapp.com',projectId:'gcmofficial',storageBucket:'gcmofficial.firebasestorage.app',messagingSenderId:'921580347852',appId:'1:921580347852:web:5f0a05f6b545ec37aafd69',measurementId:'G-BJ4TJKXWHW'};
-const S={events:[],members:[],songs:[],sessions:[],att:{},scores:{},logs:[]};let db,auth,user=null,isEditor=false,ev=null,tab='home',editScores=false,showOut=false,renderPending=false;
-try{ev=localStorage.getItem('ev')}catch{}
-const $=s=>document.querySelector(s),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),today=()=>new Date().toLocaleDateString('sv');
-const TABS=[['home','總覽'],['songs','曲目與人選'],['att','出缺席'],['log','練習紀錄'],['set','設定']],ST={todo:'未練',wip:'練習中',ok:'已 OK'};
-const isAdmin=()=>!!user&&isEditor,assertAdmin=()=>{if(!isAdmin())throw Error('請先以 Firestore editors/{Google帳號email} 授權此管理者')};
-const E=()=>S.events.find(x=>x.id===ev)||S.events.filter(x=>x.date>=today()).sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0]||S.events.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0]||null;
-const ctx=e=>({songs:S.songs.filter(x=>x.eventId===e?.id).sort((a,b)=>(a.order||0)-(b.order||0)),sess:S.sessions.filter(x=>x.eventId===e?.id).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')))}),mn=id=>S.members.find(x=>x.id===id)?.name||'',AM=e=>S.members.filter(m=>showOut||!(e?.out||[]).includes(m.id)),LD=s=>Array.isArray(s?.leaders)?s.leaders:(s?.leader?[s.leader]:[]),safe=u=>/^https?:\/\//i.test(u||'')?u:'';
-const attRecord=(sid,mid)=>S.att[sid]?.[mid]||{},attendanceValue=(sid,mid)=>{const a=attRecord(sid,mid);return typeof a==='string'?a:(a.value||'?')},attendanceReason=(sid,mid)=>{const a=attRecord(sid,mid);return typeof a==='string'?'':(a.reason||'')};
-function message(t){$('#msg').textContent=t||''}function sub(name,fn){return db.collection(name).onSnapshot(q=>{fn(q.docs.map(d=>({id:d.id,...d.data()})));render()},e=>message(`讀取 ${name} 失敗：${e.message||e.code}`))}
-function subscribeRecords(){db.collection('attendance').onSnapshot(q=>{S.att={};q.docs.forEach(doc=>{const x=doc.data();if(x.sessionId&&x.memberId)(S.att[x.sessionId]??={})[x.memberId]={value:x.value||'?',reason:x.reason||''}});render()},e=>message('出席資料讀取失敗：'+(e.message||e.code)));db.collection('scores').onSnapshot(q=>{S.scores={};q.docs.forEach(doc=>{const x=doc.data();if(x.memberId&&x.songId)(S.scores[x.memberId]??={})[x.songId]=x.value});render()},e=>message('自評分數讀取失敗：'+(e.message||e.code)))}
-function render(){if(document.activeElement?.matches('input[type=text],input[type=date],textarea')){renderPending=true;return}renderPending=false;$('#nav').innerHTML=TABS.map(([k,v])=>`<button class="${tab===k?'on':''}" data-t="${k}">${v}</button>`).join('');const e=E();$('#evsel').innerHTML=S.events.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>`<option value="${esc(x.id)}" ${e&&x.id===e.id?'selected':''}>${esc(x.date||'')} ${esc(x.name||'')}</option>`).join('');$('#authBtn').textContent=user?'登出 Google':'使用 Google 登入';$('#authState').textContent=!user?'公開瀏覽（登入後可編輯）':isEditor?`管理者：${user.email||''}`:`已登入：${user.email||''}（唯讀；尚未授權管理）`;if(!e&&tab!=='set'){$('#app').innerHTML='<div class="c">尚無活動，請到「設定」新增第一個活動。</div>';return}$('#app').innerHTML=({home,songs,att,log,set})[tab](e)}
-function home(e){const{songs,sess}=ctx(e),ok=songs.filter(s=>s.status==='ok').length,unassigned=songs.filter(s=>!LD(s).length),open=S.logs.filter(l=>l.eventId===e.id&&!l.done),next=sess.find(s=>s.date>=today()),active=S.members.filter(m=>!(e.out||[]).includes(m.id)),present=next?active.filter(m=>attendanceValue(next.id,m.id)==='y').length:0,days=Math.ceil((new Date(e.date)-new Date(today()))/864e5);return `<div class="c" style="margin-bottom:10px"><b>${esc(e.name)}</b><span>${esc(e.date||'')} ${esc(e.place||'')} · ${days>=0?'倒數 '+days+' 天':'已結束'}</span></div><div class="g"><div class="c"><b>${ok}/${songs.length}</b><span>曲目已 OK</span></div><div class="c"><b>${unassigned.length}</b><span>尚未指定領唱</span></div><div class="c"><b>${next?present+'/'+active.length:'–'}</b><span>${next?'下次練習 '+esc(next.date.slice(5))+' 出席':'無待練場次'}</span></div><div class="c"><b>${open.length}</b><span>未解決改善項目</span></div></div><h2>待辦</h2><div class="c" style="padding:0">${[...unassigned.map(s=>`<div class="it">🎤 〈${esc(s.title)}〉還沒有領唱人選</div>`),...open.map(l=>`<div class="it">🔧 〈${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}〉${esc(l.issue)} <span class="mu">→ ${esc(l.fix||'待討論')}</span></div>`)].join('')||'<div class="it mu">目前沒有待辦 🎉</div>'}</div>`}
-function songs(e){const{songs}=ctx(e),M=AM(e);return `<div class="row"><span class="mu">點分數格可指定／取消領唱；分數為團員自評。</span><button data-a="showout" class="${showOut?'on':''}">顯示未參加者</button>${isAdmin()?`<button data-a="scoreMode" class="${editScores?'on':''}">${editScores?'完成編輯分數':'編輯分數'}</button>`:''}<button data-a="csv">匯出 CSV</button><button data-a="print">列印歌單</button></div><div class="sc"><table><tr><th>曲目</th><th>Key</th><th>領唱</th>${M.map(m=>`<th>${esc(m.name)}${(e.out||[]).includes(m.id)?'<br><span class="q">不參加</span>':''}</th>`).join('')}<th>狀態</th></tr>${songs.map(s=>`<tr><td>${safe(s.link)?`<a href="${esc(safe(s.link))}" target="_blank" rel="noopener">${esc(s.title)} 🔗</a>`:esc(s.title)}</td><td>${esc(s.key||'')}</td><td>${esc(LD(s).map(mn).filter(Boolean).join('、'))||'–'}</td>${M.map(m=>{const score=S.scores[m.id]?.[s.id],lead=LD(s).includes(m.id);return `<td class="h ${lead?'sel':''}" ${isAdmin()&&!editScores?`data-a="lead" data-s="${esc(s.id)}" data-m="${esc(m.id)}"`:''}>${editScores&&isAdmin()?`<input aria-label="${esc(m.name)}自評分數" type="number" min="1" max="10" value="${score??''}" data-a="score" data-s="${esc(s.id)}" data-m="${esc(m.id)}">`:score??'–'}</td>`}).join('')}<td>${isAdmin()?`<select data-a="status" data-s="${esc(s.id)}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${s.status===k?'selected':''}>${v}</option>`).join('')}</select>`:ST[s.status]||ST.todo}</td></tr>`).join('')||`<tr><td colspan="${M.length+4}" class="mu">此活動尚無曲目，管理者可至設定新增。</td></tr>`}</table></div>`}
-function att(e){const{sess}=ctx(e),M=AM(e),sym={y:'<span class="y">✓</span>',n:'<span class="n">請假</span>','?':'<span class="q">?</span>'};return `<div class="row"><span class="mu">${isAdmin()?'點格子切換：✓ 出席 → 請假 → ? 未確認；請假時可輸入原因，滑鼠懸停可查看。':'✓ 出席／紅字請假；移至請假格可查看原因。'}</span><button data-a="showout" class="${showOut?'on':''}">顯示未參加者</button></div><div class="sc"><table><tr><th>團員</th>${sess.map(s=>`<th class="${s.date<today()?'dim':''}">${esc((s.date||'').slice(5))}<br>${esc(s.label||'')}</th>`).join('')}</tr>${M.map(m=>`<tr><td>${esc(m.name)}${(e.out||[]).includes(m.id)?' <span class="q">（不參加）</span>':''}</td>${sess.map(s=>{const v=attendanceValue(s.id,m.id),reason=attendanceReason(s.id,m.id),tip=v==='n'?(reason?`請假原因：${reason}`:'請假（未填原因）'):'';return `<td tabindex="0" class="h reason-cell ${s.date<today()?'dim':''}" ${isAdmin()?`data-a="att" data-s="${esc(s.id)}" data-m="${esc(m.id)}"`:''} data-tip="${esc(tip)}" title="${esc(tip)}" aria-label="${esc(m.name)} ${esc(s.date||'')}：${esc(tip||({y:'出席','?':'未確認'}[v]||'請假'))}">${sym[v]||sym['?']}</td>`}).join('')}</tr>`).join('')}<tr><td><b>出席人數</b></td>${sess.map(s=>`<td><b>${M.filter(m=>attendanceValue(s.id,m.id)==='y').length}/${M.length}</b></td>`).join('')}</tr></table></div>`}
-function log(e){const{songs,sess}=ctx(e),logs=S.logs.filter(x=>x.eventId===e.id).sort((a,b)=>(b.ts||0)-(a.ts||0));return `${isAdmin()?`<div class="c"><h2 style="margin-top:0">新增練習紀錄</h2><div class="row"><select id="logSession">${sess.map(s=>`<option value="${esc(s.id)}">${esc((s.date||'').slice(5))} ${esc(s.label||'')}</option>`).join('')}</select><select id="logSong"><option value="">整體</option>${songs.map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join('')}</select></div><div class="row"><input class="field" id="logIssue" type="text" placeholder="發現的問題"><input class="field" id="logFix" type="text" placeholder="改善方式／下次要練的"><button class="p" data-a="addlog">新增</button></div></div>`:''}<h2>練習紀錄</h2><div class="c" style="padding:0">${logs.map(l=>`<div class="it"><input type="checkbox" ${l.done?'checked':''} data-a="done" data-id="${esc(l.id)}" ${isAdmin()?'':'disabled'}><div style="${l.done?'opacity:.55':''}"><b>${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}</b> <span class="tag">${esc((S.sessions.find(s=>s.id===l.sessionId)?.date||'').slice(5))}</span><br>${esc(l.issue||'')}<br><span class="mu">→ ${esc(l.fix||'')}</span></div>${isAdmin()?`<button class="x" data-a="del" data-p="logs/${esc(l.id)}">✕</button>`:''}</div>`).join('')||'<div class="it mu">還沒有練習紀錄</div>'}</div>`}
-function set(e){if(!isAdmin())return '<div class="c">設定與資料修改僅限授權管理者。請使用 Google 登入，並確認帳號已加入 Firestore editors 白名單。</div>';const{songs,sess}=ctx(e);return `<h2>新增活動</h2><div class="row"><input class="field" id="eventName" placeholder="活動名稱"><input type="date" id="eventDate"><input class="field" id="eventPlace" placeholder="地點"><button class="p" data-a="addEvent">新增活動</button></div>${e?`<h2>目前活動：${esc(e.name)}</h2><h3>曲目</h3><div class="row"><input class="field" id="songTitle" placeholder="曲名"><input id="songKey" placeholder="Key" style="max-width:130px"><input class="field" id="songLink" placeholder="歌曲連結（https://…，可不填）"><button class="p" data-a="addSong">新增曲目</button></div>${songs.map(s=>`<div class="admin-item"><span>${esc(s.title)} ${esc(s.key||'')}</span><button class="x" data-a="del" data-p="songs/${esc(s.id)}">刪除</button></div>`).join('')}<h3>練習場次</h3><div class="row"><input type="date" id="sessionDate"><input class="field" id="sessionLabel" placeholder="備註（如彩排）"><button class="p" data-a="addSession">新增場次</button></div>${sess.map(s=>`<div class="admin-item">${esc(s.date)} ${esc(s.label||'')}<button class="x" data-a="del" data-p="sessions/${esc(s.id)}">刪除</button></div>`).join('')}<h3>此活動參加名單</h3><p class="mu">取消勾選＝不參加此活動，會從曲目與出缺席名單隱藏。</p><div class="row">${S.members.map(m=>`<label><input type="checkbox" data-a="out" data-m="${esc(m.id)}" ${(e.out||[]).includes(m.id)?'':'checked'}> ${esc(m.name)}</label>`).join('')}</div>`:''}<h2>團員（所有活動共用）</h2><div class="row"><input class="field" id="memberName" placeholder="團員姓名"><select id="memberGender"><option value="女">女</option><option value="男">男</option><option value="其他">其他／不填</option></select><button class="p" data-a="addMember">新增團員</button></div>${S.members.map(m=>`<div class="admin-item">${esc(m.name)}（${esc(m.gender||'')}）<button class="x" data-a="del" data-p="members/${esc(m.id)}">刪除</button></div>`).join('')}<h2>資料備份</h2><button data-a="exportJson">匯出完整 JSON</button>`}
-const val=id=>($('#'+id)?.value||'').trim();
-function csvCell(x){let s=String(x??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}function download(name,text,type){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-function exportCsv(e){const songs=ctx(e).songs,headers=['曲目','Key','狀態','領唱配置',...S.members.map(m=>`${m.name}自評分數`)],rows=songs.map(s=>[s.title,s.key||'',ST[s.status]||s.status||'',LD(s).map(mn).join('、'),...S.members.map(m=>S.scores[m.id]?.[s.id]??'')]);download(`${e.name||'活動'}-曲目.csv`,'\ufeff'+[headers,...rows].map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
-function printSongs(e){const songs=ctx(e).songs,w=window.open('','_blank');if(!w){message('瀏覽器封鎖了列印視窗，請允許彈出視窗後重試。');return}w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(e.name)}歌單</title><style>body{font:16px/1.6 sans-serif;margin:32px}.song{padding:10px 0;border-bottom:1px solid #ccc}</style><h1>${esc(e.name)}領唱歌單</h1><p>${esc(e.date||'')}</p>${songs.map(s=>`<div class="song"><b>${esc(s.title)}</b>　${esc(s.key||'')}<br>領唱：${esc(LD(s).map(mn).join('、')||'未指定')}</div>`).join('')}<script>window.onload=()=>window.print()<\/script>`);w.document.close()}
-async function exportJson(){assertAdmin();const names=['events','members','songs','sessions','attendance','scores','logs'],out={};for(const n of names){const snap=await db.collection(n).get();out[n]=Object.fromEntries(snap.docs.map(d=>[d.id,d.data()]))}download('gcm-export.json',JSON.stringify(out,null,2),'application/json')}
-async function toggleAttendance(sid,mid){assertAdmin();const old=attendanceValue(sid,mid),next={y:'n',n:'?','?':'y'}[old];let reason='';if(next==='n'){reason=window.prompt('請填寫請假原因（可留空）',attendanceReason(sid,mid)||'');if(reason===null)return;if(reason.trim().length>300)throw Error('請假原因最多 300 字')}await db.doc(`attendance/${sid}__${mid}`).set({sessionId:sid,memberId:mid,value:next,...(next==='n'&&reason.trim()?{reason:reason.trim()}:{})})}
-document.addEventListener('click',async event=>{const b=event.target.closest('[data-t],[data-a]');if(!b)return;const d=b.dataset,e=E();if(d.t){tab=d.t;editScores=false;render();return}try{switch(d.a){case'showout':showOut=!showOut;render();break;case'scoreMode':assertAdmin();editScores=!editScores;render();break;case'csv':if(e)exportCsv(e);break;case'print':if(e)printSongs(e);break;case'lead':{assertAdmin();const song=S.songs.find(s=>s.id===d.s);if(!song)throw Error('找不到曲目');const leaders=LD(song),next=leaders.includes(d.m)?leaders.filter(x=>x!==d.m):[...leaders,d.m];await db.doc(`songs/${d.s}`).update({leaders:next,leader:''});break}case'att':await toggleAttendance(d.s,d.m);break;case'done':assertAdmin();await db.doc(`logs/${d.id}`).update({done:b.checked});break;case'del':assertAdmin();if(confirm('確定刪除？'))await db.doc(d.p).delete();break;case'addlog':assertAdmin();if(!val('logIssue'))throw Error('請填寫問題內容');if(!val('logSession'))throw Error('請先新增練習場次');await db.collection('logs').add({eventId:e.id,sessionId:val('logSession'),songId:val('logSong'),issue:val('logIssue'),fix:val('logFix'),done:false,ts:Date.now()});message('練習紀錄已新增');break;case'addEvent':assertAdmin();if(!val('eventName')||!val('eventDate'))throw Error('請填寫活動名稱與日期');{const ref=await db.collection('events').add({name:val('eventName'),date:val('eventDate'),place:val('eventPlace'),out:[]});ev=ref.id;try{localStorage.setItem('ev',ev)}catch{}}message('活動已新增');break;case'addMember':assertAdmin();if(!val('memberName'))throw Error('請輸入團員姓名');await db.collection('members').add({name:val('memberName'),gender:$('#memberGender').value,order:Date.now()});message('團員已新增');break;case'addSong':assertAdmin();if(!e)throw Error('請先新增活動');if(!val('songTitle'))throw Error('請輸入曲名');{const link=val('songLink');if(link&&!safe(link))throw Error('歌曲連結請使用 http:// 或 https://');await db.collection('songs').add({eventId:e.id,title:val('songTitle'),key:val('songKey'),link,leaders:[],leader:'',status:'todo',order:Date.now()})}message('曲目已新增');break;case'addSession':assertAdmin();if(!e)throw Error('請先新增活動');if(!val('sessionDate'))throw Error('請選擇場次日期');await db.collection('sessions').add({eventId:e.id,date:val('sessionDate'),label:val('sessionLabel')});message('場次已新增');break;case'exportJson':await exportJson();break}}catch(error){message('操作失敗：'+(error.message||error.code));console.error(error)}});
-document.addEventListener('change',async event=>{const t=event.target,d=t.dataset;if(!d.a)return;try{if(d.a==='ev'){ev=t.value;try{localStorage.setItem('ev',ev)}catch{}render();return}if(d.a==='status'){assertAdmin();await db.doc(`songs/${d.s}`).update({status:t.value})}if(d.a==='score'){assertAdmin();if(t.value==='')return;const n=Number(t.value);if(!Number.isInteger(n)||n<1||n>10)throw Error('分數請輸入 1 到 10 的整數');await db.doc(`scores/${d.m}__${d.s}`).set({memberId:d.m,songId:d.s,value:n})}if(d.a==='out'){assertAdmin();const out=new Set(E().out||[]);t.checked?out.delete(d.m):out.add(d.m);await db.doc(`events/${E().id}`).update({out:[...out]})}}catch(error){message('儲存失敗：'+(error.message||error.code));console.error(error)}});
-document.addEventListener('focusout',()=>setTimeout(()=>{if(renderPending)render()},80));
-$('#authBtn').addEventListener('click',async()=>{try{if(user){await auth.signOut();message('已登出')}else{const provider=new firebase.auth.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});await auth.signInWithPopup(provider)}}catch(error){message('Google 登入失敗：'+(error.message||error.code)+'。請確認 Firebase 已啟用 Google 登入，且目前網站網域在 Authorized domains 清單中。');console.error(error)}});
-try{firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(async next=>{user=next;isEditor=false;render();if(next){try{if(!next.email)throw Error('Google 帳號未提供 email');const snap=await db.doc(`editors/${next.email}`).get();isEditor=snap.exists&&snap.data().active===true;if(!isEditor)message(`帳號 ${next.email} 尚未獲管理者授權；目前僅可瀏覽。`)}catch(error){isEditor=false;message('登入成功但管理者權限檢查失敗：'+(error.message||error.code)+'。請確認已發布 firestore.rules。')} }render()});sub('events',d=>S.events=d);sub('members',d=>S.members=d.sort((a,b)=>(a.order||0)-(b.order||0)));sub('songs',d=>S.songs=d);sub('sessions',d=>S.sessions=d);sub('logs',d=>S.logs=d);subscribeRecords()}catch(error){$('#app').textContent='Firebase 初始化失敗：'+(error.message||error.code);console.error(error)}
+const CFG={apiKey:'AIzaSyARhWjIkQacQPdNLaEY7bvsf9lIAKnfgZE',authDomain:'gcmofficial.firebaseapp.com',projectId:'gcmofficial',storageBucket:'gcmofficial.firebasestorage.app',messagingSenderId:'921580347852',appId:'1:921580347852:web:5f0a05f6b545ec37aafd69'};
+const S={events:[],members:[],songs:[],sessions:[],att:{},sc:{},logs:[]};
+const ST={todo:'未練',wip:'練習中',ok:'已 OK'};
+let db,auth,FV,user=null,admin=false,evId=null,tab='home',editScore=false,showOut=false,logAll=false,pending=false;
+try{evId=localStorage.getItem('gcm-ev')}catch(e){}
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toLocaleDateString('sv');
+const msg=t=>{$('#msg').textContent=t||''};
+const safe=u=>/^https?:\/\//i.test(u||'')?u:'';
+const byO=(a,b)=>(a.order||0)-(b.order||0)||String(a.id).localeCompare(b.id);
+const byD=(a,b)=>(a.date||'').localeCompare(b.date||'');
+const LD=s=>Array.isArray(s.leaders)?s.leaders:[];
+const nm=id=>S.members.find(m=>m.id===id)?.name||'';
+const isOut=(e,id)=>(e.out||[]).includes(id);
+const MS=e=>S.members.slice().sort(byO).filter(m=>showOut||!isOut(e,m.id));
+const ttl=s=>safe(s.link)?`<a href="${esc(safe(s.link))}" target="_blank" rel="noopener">${esc(s.title)} 🔗</a>`:esc(s.title);
+const cur=()=>{const E=S.events.slice().sort(byD);return E.find(e=>e.id===evId)||E.find(e=>e.date>=today())||E[E.length-1]};
+const ctx=e=>({songs:S.songs.filter(s=>s.eventId===e.id).sort(byO),sess:S.sessions.filter(s=>s.eventId===e.id).sort(byD)});
+
+function listen(col,fn){db.collection(col).onSnapshot(q=>{fn(q.docs.map(d=>({id:d.id,...d.data()})));draw()},e=>msg('讀取失敗（'+col+'）：'+(e.code==='permission-denied'?'沒有讀取權限，請確認 Firestore 規則已發布':e.message)))}
+const nest=(col,key,a,b)=>listen(col,d=>{const o={};d.forEach(x=>{if(x[a]&&x[b])(o[x[a]]??={})[x[b]]=x.value});S[key]=o});
+
+/* ---------- views ---------- */
+function vHome(e){
+ const{songs,sess}=ctx(e),act=S.members.filter(m=>!isOut(e,m.id)).map(m=>m.id);
+ const ok=songs.filter(s=>s.status==='ok').length,noL=songs.filter(s=>!LD(s).some(id=>act.includes(id)));
+ const open=S.logs.filter(l=>l.eventId===e.id&&!l.done),nx=sess.find(s=>s.date>=today());
+ const n=nx?act.filter(id=>(S.att[nx.id]||{})[id]==='y').length:0,d=Math.ceil((new Date(e.date)-new Date(today()))/864e5);
+ const todo=[...noL.map(s=>`<div class="it">🎤 〈${esc(s.title)}〉還沒有領唱人選</div>`),...open.map(l=>`<div class="it">🔧 〈${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}〉${esc(l.issue)} <span class="mu">→ ${esc(l.fix||'待討論')}</span></div>`)];
+ return `<div class="c"><span class="big">${esc(e.name)}</span><span class="mu">${esc(e.date)} ${esc(e.place||'')}　${d>=0?'倒數 '+d+' 天':'已結束'}</span></div>
+ <div class="g" style="margin-top:10px"><div class="c"><span class="big">${ok}/${songs.length}</span><small>曲目已 OK</small><div class="bar"><i style="width:${songs.length?ok/songs.length*100:0}%"></i></div></div>
+ <div class="c"><span class="big">${noL.length}</span><small>尚未指定領唱</small></div>
+ <div class="c"><span class="big">${nx?n+'/'+act.length:'–'}</span><small>${nx?'下次練習 '+esc(nx.date.slice(5))+' 可到':'沒有待練場次'}</small></div>
+ <div class="c"><span class="big">${open.length}</span><small>未解決改善項目</small></div></div>
+ <h2>待辦</h2><div class="c" style="padding:0">${todo.join('')||'<div class="it mu">目前沒有待辦</div>'}</div>`}
+
+function vSongs(e){
+ const{songs}=ctx(e),M=MS(e);
+ return `<div class="row"><small>${admin?'點分數格指定或取消領唱（可複選）':'金色外框＝領唱人選；格內數字為自評分數'}</small><span class="sp"></span><button data-act="showout" class="${showOut?'on':''}">顯示未參加者</button>${admin?`<button data-act="editscore" class="${editScore?'on':''}">${editScore?'完成編輯':'編輯分數'}</button>`:''}</div>
+ <div class="sc"><table><tr><th>曲目</th><th>Key</th><th>領唱</th>${M.map(m=>`<th>${esc(m.name)}${isOut(e,m.id)?'<br><small>不參加</small>':''}</th>`).join('')}<th>狀態</th></tr>
+ ${songs.map(s=>{const L=LD(s);return `<tr><td>${ttl(s)}</td><td>${esc(s.key)}</td><td>${esc(L.filter(id=>M.some(m=>m.id===id)).map(nm).join('、'))||'–'}</td>${M.map(m=>{const v=(S.sc[m.id]||{})[s.id],k=Number.isInteger(v)&&v>=1&&v<=10;
+  return editScore&&admin?`<td><input class="sn" type="number" min="1" max="10" value="${k?v:''}" data-score="${m.id}/${s.id}" aria-label="${esc(m.name)} ${esc(s.title)}"></td>`:`<td class="${L.includes(m.id)?'sel':''}${admin?' h':''}" style="${k?`background:hsl(${(v-1)*13} 60% 50% / .3)`:''}" ${admin?`tabindex="0" data-lead="${s.id}/${m.id}"`:''}>${k?v:'–'}</td>`}).join('')}
+ <td>${admin?`<select data-status="${s.id}">${Object.entries(ST).map(([k,t])=>`<option value="${k}" ${s.status===k?'selected':''}>${t}</option>`).join('')}</select>`:esc(ST[s.status]||'未練')}</td></tr>`}).join('')||'<tr><td colspan="9" class="mu">尚無曲目。管理者可到「管理」新增。</td></tr>'}</table></div>`}
+
+function vAtt(e){
+ const{sess}=ctx(e),M=MS(e),t=today(),sym={y:'<span class="y">✓</span>',n:'<span class="n">請假</span>','?':'<span class="mu">?</span>'};
+ return `<div class="row"><small>${admin?'點格子切換：✓ 出席 → 請假 → ? 未確認':'✓ 出席　請假　? 未確認'}</small><span class="sp"></span><button data-act="showout" class="${showOut?'on':''}">顯示未參加者</button></div>
+ <div class="sc"><table><tr><th>成員</th>${sess.map(s=>`<th class="${s.date<t?'dim':''}">${esc(s.date.slice(5))}<br><small>${esc(s.label)}</small></th>`).join('')}</tr>
+ ${M.map(m=>`<tr><td>${esc(m.name)}${isOut(e,m.id)?' <small>（不參加）</small>':''}</td>${sess.map(s=>`<td class="${admin?'h ':''}${s.date<t?'dim':''}" ${admin?`tabindex="0" data-att="${s.id}/${m.id}"`:''}>${sym[(S.att[s.id]||{})[m.id]||'?']}</td>`).join('')}</tr>`).join('')}
+ <tr><td><b>出席人數</b></td>${sess.map(s=>`<td><b>${M.filter(m=>(S.att[s.id]||{})[m.id]==='y').length}/${M.length}</b></td>`).join('')}</tr></table></div>`}
+
+function vLog(e){
+ const{songs,sess}=ctx(e),L=S.logs.filter(l=>l.eventId===e.id&&(logAll||!l.done)).sort((a,b)=>(b.ts||0)-(a.ts||0));
+ const form=admin?`<form data-add="logs" class="c"><div class="row"><select name="sessionId">${sess.map(s=>`<option value="${s.id}" ${s.date<=today()?'selected':''}>${esc(s.date.slice(5))} ${esc(s.label)}</option>`).join('')}</select><select name="songId"><option value="">整體</option>${songs.map(s=>`<option value="${s.id}">${esc(s.title)}</option>`).join('')}</select></div><div class="row"><input type="text" name="issue" placeholder="發現的問題（例：副歌換氣不齊）" required><input type="text" name="fix" placeholder="改善方式／下次要練"><button class="p">新增紀錄</button></div></form>`:'';
+ return `${form}<div class="row"><h2 style="margin:8px 0">練習紀錄</h2><span class="sp"></span><button data-act="logall" class="${logAll?'on':''}">${logAll?'顯示全部':'只看未解決'}</button></div>
+ <div class="c" style="padding:0">${L.map(l=>`<div class="it">${admin?`<input type="checkbox" ${l.done?'checked':''} data-done="${l.id}" aria-label="已解決">`:''}<div style="flex:1;${l.done?'opacity:.55':''}"><b>${esc(S.songs.find(s=>s.id===l.songId)?.title||'整體')}</b> <span class="tag">${esc(S.sessions.find(s=>s.id===l.sessionId)?.date.slice(5)||'')}</span><br>${esc(l.issue)}<br><span class="mu">→ ${esc(l.fix||'')}</span></div>${admin?`<button class="d" data-del="logs/${l.id}">刪除</button>`:''}</div>`).join('')||'<div class="it mu">沒有符合的紀錄</div>'}</div>`}
+
+const inp=(c,id,f,v,t='text',ph='',w='')=>`<input type="${t}" value="${esc(v??'')}" placeholder="${ph}" data-edit="${c}/${id}/${f}" ${t==='number'?'data-num="1"':''} ${w?`style="width:${w}"`:''}>`;
+function vManage(e){
+ const{songs,sess}=ctx(e),M=S.members.slice().sort(byO);
+ const sec=(t,body)=>`<h2>${t}</h2><div class="c">${body}</div>`;
+ return `<p class="mu">所有修改會即時儲存並同步給所有人。刪除會一併清除相關的分數與出缺席。</p>`+
+ sec('活動',`${e?`<div class="row">${inp('events',e.id,'name',e.name,'text','活動名稱')}${inp('events',e.id,'date',e.date,'date')}${inp('events',e.id,'place',e.place,'text','地點')}<button class="d" data-del="events/${e.id}">刪除此活動</button></div>
+ <small>此活動參加名單（取消勾選＝不參加，會從人選與出缺席隱藏）</small><div class="row">${M.map(m=>`<label class="ck"><input type="checkbox" data-out="${m.id}" ${isOut(e,m.id)?'':'checked'}> ${esc(m.name)}</label>`).join('')||'<span class="mu">尚無團員</span>'}</div>`:''}
+ <form data-add="events" class="row"><input type="text" name="name" placeholder="新活動名稱" required><input type="date" name="date" required><input type="text" name="place" placeholder="地點"><button class="p">新增活動</button></form>`)+
+ (e?sec('曲目',songs.map(s=>`<div class="row">${inp('songs',s.id,'order',s.order,'number','順序','64px')}${inp('songs',s.id,'title',s.title,'text','曲名')}${inp('songs',s.id,'key',s.key,'text','Key','100px')}${inp('songs',s.id,'link',s.link,'url','連結 https://…')}<button class="d" data-del="songs/${s.id}">刪除</button></div>`).join('')+
+ `<form data-add="songs" class="row"><input type="text" name="title" placeholder="新曲名" required><input type="text" name="key" placeholder="Key" style="max-width:100px"><input type="url" name="link" placeholder="連結（可不填）"><button class="p">新增曲目</button></form>`)+
+ sec('練習場次',sess.map(s=>`<div class="row">${inp('sessions',s.id,'date',s.date,'date')}${inp('sessions',s.id,'label',s.label,'text','備註（如 彩排）')}<button class="d" data-del="sessions/${s.id}">刪除</button></div>`).join('')+
+ `<form data-add="sessions" class="row"><input type="date" name="date" required><input type="text" name="label" placeholder="備註"><button class="p">新增場次</button></form>`):'')+
+ sec('團員（所有活動共用）',M.map(m=>`<div class="row">${inp('members',m.id,'order',m.order,'number','排序','64px')}${inp('members',m.id,'name',m.name,'text','姓名')}${inp('members',m.id,'gender',m.gender,'text','性別','80px')}<button class="d" data-del="members/${m.id}">刪除</button></div>`).join('')+
+ `<form data-add="members" class="row"><input type="text" name="name" placeholder="新團員姓名" required><input type="text" name="gender" placeholder="性別" style="max-width:80px"><button class="p">新增團員</button></form>`)}
+
+function draw(){
+ const a=document.activeElement;if(a&&a.matches('input[type=text],input[type=url],input[type=date],input[type=number]')){pending=true;return}
+ pending=false;
+ $('#auth').textContent=user?'登出':'使用 Google 登入';
+ $('#who').textContent=user?(admin?'管理者：':'已登入：')+(user.email||'')+(admin?'':'（僅可瀏覽）'):'公開瀏覽';
+ const T=[['home','總覽'],['songs','曲目與人選'],['att','出缺席'],['log','練習紀錄']];if(admin)T.push(['manage','管理']);
+ if(!T.some(t=>t[0]===tab))tab='home';
+ $('#nav').innerHTML=T.map(([k,v])=>`<button class="${tab===k?'on':''}" data-t="${k}">${v}</button>`).join('');
+ const e=cur();
+ $('#evsel').innerHTML=S.events.slice().sort(byD).map(x=>`<option value="${x.id}" ${e&&x.id===e.id?'selected':''}>${esc(x.date)} ${esc(x.name)}</option>`).join('');
+ try{
+  if(!e&&tab!=='manage'){$('#app').innerHTML='<p>還沒有活動。'+(admin?'請到「管理」新增第一個活動。':'請管理者先建立活動。')+'</p>';return}
+  $('#app').innerHTML={home:vHome,songs:vSongs,att:vAtt,log:vLog,manage:vManage}[tab](e);
+ }catch(x){console.error(x);msg('畫面產生失敗：'+x.message)}
+}
+
+/* ---------- writes ---------- */
+async function W(fn){if(!admin){msg('請先以管理者帳號登入');return}try{await fn();msg('')}catch(e){msg('儲存失敗：'+(e.code==='permission-denied'?'沒有權限，請確認登入信箱與 Firestore 規則':e.message))}}
+const R=(c,i)=>db.collection(c).doc(i);
+async function cascade(col,id){
+ const ops=[],del=(c,i)=>ops.push(b=>b.delete(R(c,i)));
+ const dSong=sid=>{del('songs',sid);Object.keys(S.sc).forEach(m=>{if(S.sc[m][sid]!==undefined)del('scores',m+'__'+sid)})};
+ const dSess=xid=>{del('sessions',xid);Object.keys(S.att[xid]||{}).forEach(m=>del('attendance',xid+'__'+m))};
+ if(col==='songs')dSong(id);else if(col==='sessions')dSess(id);else if(col==='logs')del('logs',id);
+ else if(col==='members'){del('members',id);Object.keys(S.sc[id]||{}).forEach(s=>del('scores',id+'__'+s));Object.keys(S.att).forEach(x=>{if(S.att[x][id]!==undefined)del('attendance',x+'__'+id)});
+  S.songs.filter(s=>LD(s).includes(id)).forEach(s=>ops.push(b=>b.update(R('songs',s.id),{leaders:FV.arrayRemove(id)})));
+  S.events.filter(e=>isOut(e,id)).forEach(e=>ops.push(b=>b.update(R('events',e.id),{out:FV.arrayRemove(id)})))}
+ else if(col==='events'){del('events',id);S.songs.filter(s=>s.eventId===id).forEach(s=>dSong(s.id));S.sessions.filter(s=>s.eventId===id).forEach(s=>dSess(s.id));S.logs.filter(l=>l.eventId===id).forEach(l=>del('logs',l.id))}
+ for(let i=0;i<ops.length;i+=400){const b=db.batch();ops.slice(i,i+400).forEach(f=>f(b));await b.commit()}
+}
+const nextO=a=>Math.max(0,...a.map(x=>x.order||0))+1;
+const ADD={
+ events:f=>({name:f.name,date:f.date,place:f.place||'',out:[]}),
+ members:f=>({name:f.name,gender:f.gender||'',order:nextO(S.members)}),
+ songs:f=>({eventId:cur().id,title:f.title,key:f.key||'',link:safe(f.link),leaders:[],status:'todo',order:nextO(S.songs.filter(s=>s.eventId===cur().id))}),
+ sessions:f=>({eventId:cur().id,date:f.date,label:f.label||''}),
+ logs:f=>({eventId:cur().id,songId:f.songId||'',sessionId:f.sessionId||'',issue:f.issue,fix:f.fix||'',done:false,ts:Date.now()})
+};
+
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-t],[data-act],[data-lead],[data-att],[data-del],#auth');if(!b)return;const d=b.dataset;
+ if(b.id==='auth'){
+  if(user)auth.signOut();else{const p=new firebase.auth.GoogleAuthProvider();auth.signInWithPopup(p).catch(x=>{if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(x.code))auth.signInWithRedirect(p);else if(x.code!=='auth/popup-closed-by-user'&&x.code!=='auth/cancelled-popup-request')msg('登入失敗：'+(x.code==='auth/unauthorized-domain'?'此網域尚未加入 Firebase 授權網域':x.message))})}
+  return}
+ if(d.t){tab=d.t;editScore=false;draw();return}
+ if(d.act==='showout'){showOut=!showOut;draw()}
+ else if(d.act==='editscore'){editScore=!editScore;draw()}
+ else if(d.act==='logall'){logAll=!logAll;draw()}
+ else if(d.lead){const[s,m]=d.lead.split('/'),on=LD(S.songs.find(x=>x.id===s)||{}).includes(m);W(()=>R('songs',s).update({leaders:on?FV.arrayRemove(m):FV.arrayUnion(m)}))}
+ else if(d.att){const[s,m]=d.att.split('/'),c=(S.att[s]||{})[m]||'?';W(()=>R('attendance',s+'__'+m).set({sessionId:s,memberId:m,value:{y:'n',n:'?','?':'y'}[c]}))}
+ else if(d.del){const[c,id]=d.del.split('/');if(confirm('確定刪除？相關的分數與出缺席也會一併刪除，無法復原。'))W(()=>cascade(c,id))}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('td.h')){e.target.click()}});
+document.addEventListener('change',e=>{
+ const t=e.target,d=t.dataset;
+ if(t.id==='evsel'){evId=t.value;try{localStorage.setItem('gcm-ev',evId)}catch(x){}draw();return}
+ if(d.status)W(()=>R('songs',d.status).update({status:t.value}));
+ else if(d.done)W(()=>R('logs',d.done).update({done:t.checked}));
+ else if(d.out){const ev=cur();W(()=>R('events',ev.id).update({out:t.checked?FV.arrayRemove(d.out):FV.arrayUnion(d.out)}))}
+ else if(d.score){const[m,s]=d.score.split('/'),n=Number(t.value),id=m+'__'+s;
+  if(t.value.trim()==='')W(()=>R('scores',id).delete());
+  else if(!Number.isInteger(n)||n<1||n>10)msg('分數請輸入 1 到 10 的整數');
+  else W(()=>R('scores',id).set({memberId:m,songId:s,value:n}))}
+ else if(d.edit){const[c,id,f]=d.edit.split('/');let v=t.value.trim();
+  if(d.num)v=parseInt(v,10)||0;
+  if(f==='link'&&v&&!safe(v)){msg('連結需以 http:// 或 https:// 開頭');return}
+  if((f==='date'||f==='name'||f==='title')&&!v){msg('這個欄位不能空白');draw();return}
+  W(()=>R(c,id).update({[f]:v}))}
+});
+document.addEventListener('submit',e=>{
+ const f=e.target.closest('[data-add]');if(!f)return;e.preventDefault();
+ const col=f.dataset.add,o=Object.fromEntries(new FormData(f)),cu=cur();
+ if(col!=='events'&&col!=='members'&&!cu){msg('請先建立活動');return}
+ W(async()=>{const ref=db.collection(col).doc();await ref.set(ADD[col](o));if(col==='events'){evId=ref.id;try{localStorage.setItem('gcm-ev',evId)}catch(x){}}f.reset()})
+});
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pending)draw()},60));
+
+/* ---------- boot ---------- */
+try{
+ firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.firestore();FV=firebase.firestore.FieldValue;
+ auth.onAuthStateChanged(async u=>{
+  user=u;admin=false;draw();if(!u)return;
+  try{await db.doc('editorStatus/'+u.uid).get();if(user&&user.uid===u.uid)admin=true}
+  catch(x){if(x.code!=='permission-denied')msg('無法確認管理權限：'+x.message)}
+  draw()});
+ listen('events',d=>S.events=d);listen('members',d=>S.members=d);listen('songs',d=>S.songs=d);listen('sessions',d=>S.sessions=d);listen('logs',d=>S.logs=d);
+ nest('attendance','att','sessionId','memberId');nest('scores','sc','memberId','songId');
+}catch(x){$('#app').textContent='Firebase 初始化失敗：'+x.message}
 </script></body></html>
