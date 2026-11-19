@@ -26,53 +26,31 @@ service cloud.firestore {
         && data.memberId is string
         && data.songId is string
         && data.value is int
-        && data.value >= 1
-        && data.value <= 10
+        && data.value >= 1 && data.value <= 10
         && recordId == data.memberId + '__' + data.songId
         && exists(/databases/$(database)/documents/members/$(data.memberId))
         && exists(/databases/$(database)/documents/songs/$(data.songId));
     }
 
+    // Editors can check only their own allowlist document; no listing or client writes.
     match /editors/{email} {
-      allow read, write: if false;
+      allow get: if request.auth != null && request.auth.token.email == email;
+      allow list, write: if false;
     }
-
     match /editorStatus/{userId} {
       allow get: if isEditor() && request.auth.uid == userId;
       allow list, write: if false;
     }
-
-    match /events/{documentId} {
-      allow read: if true;
-      allow write: if isEditor();
-    }
-
-    match /members/{documentId} {
-      allow read: if true;
-      allow write: if isEditor();
-    }
-
-    match /songs/{documentId} {
-      allow read: if true;
-      allow write: if isEditor();
-    }
-
-    match /sessions/{documentId} {
-      allow read: if true;
-      allow write: if isEditor();
-    }
-
-    match /logs/{documentId} {
-      allow read: if true;
-      allow write: if isEditor();
-    }
-
+    match /events/{id} { allow read: if true; allow write: if isEditor(); }
+    match /members/{id} { allow read: if true; allow write: if isEditor(); }
+    match /songs/{id} { allow read: if true; allow write: if isEditor(); }
+    match /sessions/{id} { allow read: if true; allow write: if isEditor(); }
+    match /logs/{id} { allow read: if true; allow write: if isEditor(); }
     match /attendance/{recordId} {
       allow read: if true;
       allow create, update: if isEditor() && validAttendance(request.resource.data, recordId);
       allow delete: if isEditor();
     }
-
     match /scores/{recordId} {
       allow read: if true;
       allow create, update: if isEditor() && validScore(request.resource.data, recordId);
